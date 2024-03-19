@@ -5,4 +5,4 @@ Note that this is my first project using:
 - Computer graphics
 - Maze-related algorithms
 
-Therefore, this project's code style and logical structure are likely crude and should probably not be emulated.
+Therefore, this project's code style and logical structure are unlikely to follow best practices and should probably not be emulated.
