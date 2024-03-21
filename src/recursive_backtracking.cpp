@@ -20,13 +20,15 @@
 // Set up data structures to describe passage direction and aid with maze creation
 //------------------------------------------------------------------------------
 
-// The dimensions of each cell that we'll create, and the canvas's X,Y dimensions
+// The dimensions of each cell that we'll create. The cellWidth and cellHeight should
+// divide into xPixels and yPixels respectively, with 0 remainder.
 constexpr int cellWidth = 40;
 constexpr int cellHeight = 40;
+
 // Did you read the warning above?
-constexpr int xPixels = 200;
-constexpr int yPixels = 200;
-constexpr int fps = 1;
+constexpr int xPixels = 800;
+constexpr int yPixels = 800;
+constexpr int fps = 10;
 
 // hack: used to indicate whether it's the first tick of our simulation
 bool firstSimulationTick = true;
