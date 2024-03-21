@@ -44,58 +44,8 @@ struct mostRecentGridEdit
 };
 struct mostRecentGridEdit mrge;
 
-constexpr int NORTH = 1, SOUTH = 2, EAST = 4, WEST = 8;
-// The difference in x for each direction
-std::unordered_map<int, int> DX = {
-    {NORTH, 0},
-    {SOUTH, 0},
-    {EAST, 1},
-    {WEST, -1}};
-std::unordered_map<int, int> DY = {
-    {NORTH, -1},
-    {SOUTH, 1},
-    {EAST, 0},
-    {WEST, 0}};
-std::unordered_map<int, int> OPPOSITE = {
-    {NORTH, SOUTH},
-    {SOUTH, NORTH},
-    {EAST, WEST},
-    {WEST, EAST}};
-
 // Holds tasks required for simulation, in a queue, to be called later
 std::deque<std::packaged_task<bool()>> taskDeque;
-
-// Alias
-typedef std::vector<std::vector<int>> gridType;
-
-//------------------------------------------------------------------------------
-// Functions to assist the algorithm
-//------------------------------------------------------------------------------
-
-gridType generateMaze()
-{
-    // It's better to round down, so that our cells don't go off-screen
-    int rowCellCount = xPixels / cellWidth;
-    int colCellCount = yPixels / cellHeight;
-
-    if (xPixels % cellWidth != 0 || yPixels % cellHeight != 0)
-    {
-        std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels << ") cannot be neatly divided by cell dimensions."
-                  << " This may result in a maze that doesn't neatly fit the screen\n";
-    }
-
-    gridType grid;
-    for (int y = 0; y < colCellCount; y++)
-    {
-        std::vector<int> newRow;
-        grid.push_back(newRow);
-        for (int x = 0; x < rowCellCount; x++)
-        {
-            grid[y].push_back(0);
-        }
-    }
-    return grid;
-}
 
 //------------------------------------------------------------------------------
 // Functions for displaying the maze
@@ -109,7 +59,7 @@ void simulationTick(gridType *grid)
     void _displayMazeInConsole(gridType * grid);
 
     // The changeEffected variable is used to indicate whether a change to the grid's state has occurred.
-    // I think it's better a better use experience if we fast forward over tasks that don't change grid state.
+    // I think it's better a better user experience if we fast forward over tasks that don't change grid state.
     // This variable lets us do that. It's because of our queueing system, that our task queue sometimes
     // contains tasks which don't change the grid's state.
     auto changeEffected = false;
@@ -120,23 +70,22 @@ void simulationTick(gridType *grid)
         _simulationDraw(grid);
         _displayMazeInConsole(grid);
         _carvePassagesFrom(0, 0, grid);
+        return;
     }
-    else
-    {
-        while (!changeEffected && !taskDeque.empty())
-        {
-            std::packaged_task<bool()> task = std::move(taskDeque.front());
-            taskDeque.pop_front();
-            auto fut = task.get_future();
-            task();
-            changeEffected = fut.get();
 
-            // All tasks have finished running. We do one last display update,
-            // to update the task count in the graphical window
-            if (taskDeque.empty())
-            {
-                _simulationDraw(grid);
-            }
+    while (!changeEffected && !taskDeque.empty())
+    {
+        std::packaged_task<bool()> task = std::move(taskDeque.front());
+        taskDeque.pop_front();
+        auto fut = task.get_future();
+        task();
+        changeEffected = fut.get();
+
+        // All tasks have finished running. We do one last display update,
+        // to update the task count in the graphical window
+        if (taskDeque.empty())
+        {
+            _simulationDraw(grid);
         }
     }
 
@@ -228,7 +177,11 @@ bool _carvePassagesFrom(int startX, int startY, gridType *grid)
     // Intended to be called indirectly.
 
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
-    std::random_shuffle(directions.begin(), directions.end());
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(directions.begin(), directions.end(), g);
     for (const auto &direction : directions)
     {
         int newX = startX + DX[direction];
@@ -250,11 +203,10 @@ bool _carvePassagesFrom(int startX, int startY, gridType *grid)
 
 bool _carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType *grid)
 {
-    // We need this as its own function, so that one pop of the task queue corresponds to 1 update of the board's state
-    // returns true if it changed something, else false
-    // TODO: rename this function and make the it & the way it's used less confusing
+    // Connect source and target cells. Returns true if it changed something, else false.
+    // Having this as a separate function allows us to have one pop of the task queue correspond
+    // to 0-1 updates of the board's state.
 
-    // Connect source and target
     // auto DEBUG_1 = grid->at(startY).at(startX);
     // auto DEBUG_2 = grid->at(newY).at(newX);
     bool targetInBounds = newY >= 0 && newY < (int)grid->size() &&
@@ -288,8 +240,14 @@ bool _carvingHelper(int startX, int startY, int newX, int newY, int direction, g
 
 int main()
 {
+    if (xPixels % cellWidth != 0 || yPixels % cellHeight != 0)
+    {
+        std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels << ") cannot be neatly divided by cell dimensions."
+                  << " This may result in a maze that doesn't neatly fit the screen\n";
+    }
+
     srand(time(NULL));
-    gridType grid = generateMaze();
+    gridType grid = generateGrid((int)xPixels / cellWidth, (int)yPixels / cellHeight);
     displayMaze(&grid);
     return EXIT_SUCCESS;
 }
