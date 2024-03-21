@@ -11,13 +11,10 @@
 #include <future>
 #include <functional> // for std::bind
 #include <iostream>
-// #include <random> // for std::random_shuffle
+#include <random>
 #include <raylib.h>
-// #include <thread> // for std::this_thread::sleep_for
-// #include <time.h> // for srand
-// #include <unordered_set>
-// #include <unordered_map>
-// #include <vector>
+#include "./utils.cpp"
+#include "./constants.cpp"
 
 //------------------------------------------------------------------------------
 // Set up data structures to describe passage direction and aid with maze creation
