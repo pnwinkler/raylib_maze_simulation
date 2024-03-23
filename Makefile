@@ -4,10 +4,17 @@ DEPS =
 OBJ=bin/recursive_backtracking.o
 
 # Rule to build object files
-bin/%.o: src/%.cpp $(DEPS)
+bin/%.o: src/generators/%.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+bin/%.o: src/solvers/%.cpp $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+	
+
 # Rule to build the final executable
+solver: src/solvers/solver.cpp
+	$(CC) -o bin/$@ $^ $(CFLAGS)
+
 recursive_backtracking: $(OBJ)
 	$(CC) -o bin/$@ $^ $(CFLAGS)
 

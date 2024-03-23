@@ -13,8 +13,11 @@
 #include <future>
 #include <iostream>
 #include <random>
-#include "./constants.cpp"
-#include "./utils.cpp"
+#include "../constants.cpp"
+#include "../utils.cpp"
+// TODO: re-enable this once done with solvers/solver.cpp stuff
+// #include "./constants.cpp"
+// #include "./utils.cpp"
 
 //------------------------------------------------------------------------------
 // Set up data structures to describe passage direction and aid with maze creation
@@ -33,6 +36,10 @@ constexpr int fps = 10;
 // hack: used to indicate whether it's the first tick of our simulation
 bool firstSimulationTick = true;
 
+//------------------------------------------------------------------------------
+// Functions for displaying the maze
+//------------------------------------------------------------------------------
+
 // Holds the X and Y locations of the most recent edit on the grid
 // Each edit can affect 0-2 locations inclusive.
 struct mostRecentGridEdit {
@@ -46,15 +53,10 @@ struct mostRecentGridEdit mrge;
 // Holds tasks required for simulation, in a queue, to be called later
 std::deque<std::packaged_task<bool()>> taskDeque;
 
-//------------------------------------------------------------------------------
-// Functions for displaying the maze
-//------------------------------------------------------------------------------
-
 void simulationTick(gridType* grid) {
     // Forward declarations
     bool _carvePassagesFrom(int startX, int startY, gridType* grid);
-    void _simulationDraw(gridType * grid);
-    void _displayMazeInConsole(gridType * grid);
+    // void _displayMazeInConsole(gridType * grid);
 
     // The changeEffected variable is used to indicate whether a change to the grid's state has occurred.
     // I think it's better a better user experience if we fast forward over tasks that don't change grid state.
@@ -64,8 +66,7 @@ void simulationTick(gridType* grid) {
 
     if (firstSimulationTick) {
         firstSimulationTick = false;
-        _simulationDraw(grid);
-        _displayMazeInConsole(grid);
+        // _displayMazeInConsole(grid);
         _carvePassagesFrom(0, 0, grid);
         return;
     }
@@ -79,29 +80,42 @@ void simulationTick(gridType* grid) {
 
         // All tasks have finished running. We do one last display update,
         // to update the task count in the graphical window
-        if (taskDeque.empty()) {
-            _simulationDraw(grid);
-        }
+        // if (taskDeque.empty()) {
+        // _simulationDraw(grid);
+        // }
     }
 
     // We only need to update the display if the grid's state has changed
-    if (changeEffected) {
-        _simulationDraw(grid);
-        _displayMazeInConsole(grid);
-    }
+    // if (changeEffected) {
+    //     // _simulationDraw(grid);
+    //     _displayMazeInConsole(grid);
+    // }
 }
 
-void displayMaze(gridType* grid) {
-    // Display the maze graphically and in console
+void displayMazeIterations(gridType* grid) {
+    // Displays the state of the maze in the graphical window, progressing one simulation tick
+    // per frame displayed
     InitWindow(xPixels, yPixels, "Maze");
     SetTargetFPS(fps);
 
+    void _simulationDraw(gridType * grid);
     while (!WindowShouldClose()) {
         BeginDrawing();
+        _simulationDraw(grid);
+        // todo: set this up, so that I can simultaneously update the graphical display as well
+        // as the console printout
         simulationTick(grid);
         EndDrawing();
     }
     CloseWindow();
+}
+
+void generateMazeInstantly(gridType* grid) {
+    std::cout << "HAPPENING 1" << '\n';
+    do {
+        simulationTick(grid);
+    } while (!taskDeque.empty());
+    std::cout << "DONE HAPPENING 1" << '\n';
 }
 
 void _simulationDraw(gridType* grid) {
@@ -126,37 +140,10 @@ void _simulationDraw(gridType* grid) {
     }
 }
 
-void _displayMazeInConsole(gridType* grid) {
-    // Helper function. Prints the maze to the console. Can be called directly,
-    // but is generally expected to be called indirectly by a function that prompts
-    // grid state updates.
-
-    // Create top wall
-    int height = grid->size();
-    int width = grid->at(0).size();
-    for (int i = 0; i < width * 2; i++) {
-        std::cout << '_';
-    }
-    std::cout << '\n';
-
-    for (int y = 0; y < height; y++) {
-        std::cout << '|';
-        for (int x = 0; x < width; x++) {
-            int val = grid->at(y).at(x);
-            (val == SOUTH || (y < height - 1 && grid->at(y + DY[SOUTH])[x] == NORTH)) ? std::cout << ' '
-                                                                                      : std::cout << '_';
-            (val == EAST || (x < width - 1 && grid->at(y)[x + DX[EAST]] == WEST)) ? std::cout << ' ' : std::cout << '|';
-        }
-        std::cout << '\n';
-    }
-    std::cout << '\n';
-}
-
 //------------------------------------------------------------------------------
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool _carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid);
 bool _carvePassagesFrom(int startX, int startY, gridType* grid) {
     // Connects two cells in the grid, subject to constraints.
     // Intended to be called indirectly.
@@ -175,7 +162,20 @@ bool _carvePassagesFrom(int startX, int startY, gridType* grid) {
         if (targetInBounds && grid->at(newY).at(newX) == 0) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier
-            std::packaged_task<bool()> task(std::bind(_carvingHelper, startX, startY, newX, newY, direction, grid));
+
+            // bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid);
+            // these 2 lines each give identical error messages on compile time. Leaving the forward decl above or
+            // removing it also has no impact on the error messages std::packaged_task<bool()> task([this, startX,
+            // startY, newX, newY, direction, &grid] mutable {carvingHelper(startX, startY, newX, newY, direction,
+            // grid);}); std::packaged_task<bool()> task([this, startX, startY, newX, newY, direction, &grid] mutable
+            // {this->carvingHelper(startX, startY, newX, newY, direction, grid);});
+            // taskDeque.push_front(std::move(task));
+
+            // std::packaged_task<bool(int, int, int, int, int, gridType*)> x( carvingHelper(startX, startY, newX, newY,
+            // direction, grid));
+
+            bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid);
+            std::packaged_task<bool()> task(std::bind(carvingHelper, startX, startY, newX, newY, direction, grid));
             taskDeque.push_front(std::move(task));
         }
     }
@@ -183,7 +183,7 @@ bool _carvePassagesFrom(int startX, int startY, gridType* grid) {
     return false;
 }
 
-bool _carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid) {
+bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid) {
     // Connect source and target cells. Returns true if it changed something, else false.
     // Having this as a separate function allows us to have one pop of the task queue correspond
     // to 0-1 updates of the board's state.
@@ -213,20 +213,27 @@ bool _carvingHelper(int startX, int startY, int newX, int newY, int direction, g
         // std::cout << "Debug: changed target (" << newY << "," << newX << ") from " << DEBUG_2 << " to " <<
         // OPPOSITE[direction] << std::endl;
     }
+    // auto x = [&](int startX, int startY, gridType* grid){return _carvePassagesFrom(newX, newY, grid);};
     std::packaged_task<bool()> task(std::bind(_carvePassagesFrom, newX, newY, grid));
     taskDeque.push_front(std::move(task));
     return cond;
 }
 
-int main() {
-    if (xPixels % cellWidth != 0 || yPixels % cellHeight != 0) {
-        std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels
-                  << ") cannot be neatly divided by cell dimensions."
-                  << " This may result in a maze that doesn't neatly fit the screen\n";
-    }
+// TODO: add header file (with guard(s)), and set this up to work with that
+// then fix imports!
 
-    srand(time(NULL));
-    gridType grid = generateGrid((int)xPixels / cellWidth, (int)yPixels / cellHeight);
-    displayMaze(&grid);
-    return EXIT_SUCCESS;
-}
+// int main() {
+//     if (xPixels % cellWidth != 0 || yPixels % cellHeight != 0) {
+//         std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels
+//                   << ") cannot be neatly divided by cell dimensions."
+//                   << " This may result in a maze that doesn't neatly fit the screen\n";
+//     }
+//
+//     srand(time(NULL));
+//     gridType grid = generateGrid((int)xPixels / cellWidth, (int)yPixels / cellHeight);
+//
+//     generateMazeInstantly(&grid);
+//     displayMazeIterations(&grid);
+//
+//     return EXIT_SUCCESS;
+// }
