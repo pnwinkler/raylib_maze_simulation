@@ -111,11 +111,9 @@ void displayMazeIterations(gridType* grid) {
 }
 
 void generateMazeInstantly(gridType* grid) {
-    std::cout << "HAPPENING 1" << '\n';
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
-    std::cout << "DONE HAPPENING 1" << '\n';
 }
 
 void _simulationDraw(gridType* grid) {
