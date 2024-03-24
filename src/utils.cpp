@@ -8,6 +8,11 @@
 // Alias
 typedef std::vector<std::vector<int>> gridType;
 
+struct XY {
+    int x;
+    int y;
+};
+
 gridType generateGrid(int rows, int cols) {
     gridType grid;
     for (int y = 0; y < rows; y++) {
@@ -20,12 +25,12 @@ gridType generateGrid(int rows, int cols) {
     return grid;
 }
 
-void displayMazeInConsole(gridType* grid) {
+void displayMazeInConsole(gridType& grid) {
     // Prints the maze to the console.
 
     // Create top wall
-    int height = grid->size();
-    int width = grid->at(0).size();
+    int height = grid.size();
+    int width = grid.at(0).size();
     for (int i = 0; i < width * 2; i++) {
         std::cout << '_';
     }
@@ -34,14 +39,22 @@ void displayMazeInConsole(gridType* grid) {
     for (int y = 0; y < height; y++) {
         std::cout << '|';
         for (int x = 0; x < width; x++) {
-            int val = grid->at(y).at(x);
-            (val == SOUTH || (y < height - 1 && grid->at(y + DY[SOUTH])[x] == NORTH)) ? std::cout << ' '
-                                                                                      : std::cout << '_';
-            (val == EAST || (x < width - 1 && grid->at(y)[x + DX[EAST]] == WEST)) ? std::cout << ' ' : std::cout << '|';
+            int val = grid.at(y).at(x);
+            (val == SOUTH || (y < height - 1 && grid.at(y + DY[SOUTH])[x] == NORTH)) ? std::cout << ' '
+                                                                                     : std::cout << '_';
+            (val == EAST || (x < width - 1 && grid.at(y)[x + DX[EAST]] == WEST)) ? std::cout << ' ' : std::cout << '|';
         }
         std::cout << '\n';
     }
     std::cout << '\n';
+}
+
+bool inBounds(gridType& grid, int x, int y) {
+    return y < grid.size() && x < grid[0].size();
+}
+
+bool inBounds(gridType& grid, const XY& location) {
+    return location.y < grid.size() && location.x < grid[0].size();
 }
 
 #endif /* UTILS_H */
