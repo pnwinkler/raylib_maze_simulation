@@ -12,7 +12,7 @@ bin/%.o: src/solvers/%.cpp $(DEPS)
 	
 
 # Rule to build the final executable
-solver: src/solvers/solver.cpp
+solver: src/solvers/naive_solver.cpp
 	$(CC) -o bin/$@ $^ $(CFLAGS)
 
 recursive_backtracking: $(OBJ)
