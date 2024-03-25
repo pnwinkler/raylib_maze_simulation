@@ -95,7 +95,7 @@ void simulationTick(gridType* grid) {
 void displayMazeBuildSteps(gridType* grid) {
     // Displays the state of the maze in the graphical window, progressing one simulation tick
     // per frame displayed
-    InitWindow(xPixels, yPixels, "Maze");
+    InitWindow(xPixels, yPixels, "Maze generation: recursive backtracking");
     SetTargetFPS(fps);
 
     void _simulationDraw(gridType * grid);
