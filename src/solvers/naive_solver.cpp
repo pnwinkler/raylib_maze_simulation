@@ -40,11 +40,11 @@ void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     // Forward declaration
     bool nextStep(gridType & grid, XY target, std::deque<XY> & locationsToCheck);
     while (!found && (indicesChecked.size() < grid.size() * grid.at(0).size()) && locationsToCheck.size() > 0) {
-        std::cout << "DEBUG: LOCATIONSTOCHECK=";
-        for (XY thing : locationsToCheck) {
-            std::cout << "(" << thing.x << "," << thing.y << "), ";
-        }
-        std::cout << '\n';
+        // std::cout << "DEBUG: LOCATIONSTOCHECK=";
+        // for (XY thing : locationsToCheck) {
+        //     std::cout << "(" << thing.x << "," << thing.y << "), ";
+        // }
+        // std::cout << '\n';
 
         found = nextStep(grid, endLoc, locationsToCheck);
     }
@@ -86,8 +86,8 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         bool noWallBetween = targetInBounds && (grid[currentLocation.y][currentLocation.x] == direction ||
                                                 grid[targetedCell.y][targetedCell.x] == OPPOSITE[direction]);
 
-        std::cout << "DEBUG: location " << targetedCell.x << "," << targetedCell.y
-                  << " targetInBounds=" << targetInBounds << " indexChecked=" << indexChecked << '\n';
+        // std::cout << "DEBUG: location " << targetedCell.x << "," << targetedCell.y
+        //           << " targetInBounds=" << targetInBounds << " indexChecked=" << indexChecked << '\n';
         if (!indexChecked && noWallBetween) {
             locationsToCheck.push_back(targetedCell);
         }
@@ -111,7 +111,7 @@ void animateSolution(gridType& grid) {
             locationIndex++;
         }
         EndDrawing();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
     }
     CloseWindow();
 }
@@ -157,11 +157,11 @@ void _solverDraw(gridType& grid, int locationIdx) {
             DrawRectangle(mazeEndpoint.x * cellWidth, mazeEndpoint.y * cellHeight + 1, cellWidth - 1, cellHeight - 1,
                           LIGHTGRAY);
             DrawRectangle(checkedLocation.x * cellWidth, checkedLocation.y * cellHeight + 1, cellWidth - 1,
-                          cellHeight - 1, PINK);
+                          cellHeight - 1, PURPLE);
 
             // Add indication of previously visited cells
             for (int i = 0; i < locationIdx; i++) {
-                Color clr = gradateColor(PINK, RAYWHITE, i, locationIdx);
+                Color clr = gradateColor(PURPLE, RAYWHITE, i, locationIdx);
                 auto visitedLoc = locationsInOrderVisited.at(i);
                 DrawRectangle(visitedLoc.x * cellWidth, visitedLoc.y * cellHeight + 1, cellWidth - 1, cellHeight - 1,
                               clr);
@@ -179,19 +179,24 @@ void _solverDraw(gridType& grid, int locationIdx) {
 }
 
 int main() {
+    // TODO: make a proximity based recursive solver
+    //  consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
+    //  improve the graphical display by:
+    //   - making the window resize to exactly fit the maze (this also circumvents the not-neatly-divisible problem)
+    //   - make the config all configurable from one place, perhaps even including colors
     srand(time(NULL));
-    int rows = 6, cols = 6;
+    int rows = 19, cols = 19;
     indicesChecked.reserve(rows * cols);
     gridType grid = generateGrid(rows, cols);
 
     // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
     // but doesn't show it
-    displayMazeBuildSteps(&grid);
-    // generateMazeInstantly(&grid);
+    // displayMazeBuildSteps(&grid);
+    generateMazeInstantly(&grid);
 
     // these should be 0 indexed
     XY start = {0, 0};
-    XY end = {5, 5};
+    XY end = {18, 18};
     naiveSolver(grid, start, end);
 
     animateSolution(grid);
