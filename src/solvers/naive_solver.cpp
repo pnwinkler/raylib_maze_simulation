@@ -71,18 +71,11 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
 
     assert(inBounds(grid, currentLocation));
-    // assert(currentLocation.x < grid.at(0).size() && currentLocation.y < grid.size());
 
     if (currentLocation.y == target.y && currentLocation.x == target.x) {
         std::cout << "FOUND at " << currentLocation.x << ',' << currentLocation.y << '\n';
         return true;
     }
-
-    // TODO: also check if ANY of the neighboring cells point in this cell's direction
-    //  reason: a cell can have 2 sides without a wall, but can only point in 1 direction at a time
-    //  therefore, if our current cell does not point to a 2nd non-wall direction, then the cell in that
-    //  location ought to point to our current cell
-    //    2 cells can point to each other
 
     for (auto direction : directions) {
         XY targetedCell = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
@@ -96,11 +89,7 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         std::cout << "DEBUG: location " << targetedCell.x << "," << targetedCell.y
                   << " targetInBounds=" << targetInBounds << " indexChecked=" << indexChecked << '\n';
         if (!indexChecked && noWallBetween) {
-            // todo? set up clang style to not have the conditional at the same indentation as its block
             locationsToCheck.push_back(targetedCell);
-            // std::cout << "DEBUG: PUSHING BACK with " << nextLoc.y << ',' << nextLoc.x << ". Size of stack is now "
-            // << locationsToCheck.size() << std::endl;
-            // std::cout<<"DEBUG: ADDING LOCATION " << nextLoc.y << nextLoc.x<< '\n';
         }
     }
 
@@ -113,7 +102,7 @@ void animateSolution(gridType& grid) {
     // Forward declaration
     void _solverDraw(gridType & grid, int locationIdx);
 
-    InitWindow(xPixels, yPixels, "Maze");
+    InitWindow(xPixels, yPixels, "Maze solving: naive recursion");
     int locationIndex = 0;
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -128,26 +117,35 @@ void animateSolution(gridType& grid) {
 }
 
 Color gradateColor(Color start, Color target, int i, int locationIdx) {
+    // Apply a function to return a color between the start and target colors
     auto d1 = target.r - start.r;
     auto d2 = target.g - start.g;
     auto d3 = target.b - start.b;
     auto d4 = target.a - start.a;
 
-    float multiplier = (float)i / locationIdx;
+    // For i values close to locationIdx, return more similar colors than for i values further from it.
+    // Reasoning: I believe it's visually more appealing (and less distracting) to use fairly uniform colors for cells
+    // visited long ago. This uniformity also effectively exaggerates the constrast between recently visited cells,
+    // making it easier at a glance to reconstruct the recent path taken.
+    float multiplier;
+    if (locationIdx - i < 3) {
+        // Gradate normally
+        multiplier = (float)i / locationIdx;
+    } else {
+        multiplier = (float)i / (locationIdx * 1.5);
+    }
+
     int d1Col = target.r - (d1 * (multiplier));
     int d2Col = target.g - (d2 * (multiplier));
     int d3Col = target.b - (d3 * (multiplier));
     int d4Col = target.a - (d4 * (multiplier));
     Color clr = Color(d1Col, d2Col, d3Col, d4Col);
-    std::cout << "Colors=" << d1Col << ',' << d2Col << ',' << d3Col << ',' << d4Col << '\n';
     return clr;
 }
 
 void _solverDraw(gridType& grid, int locationIdx) {
     // Helper function, to draw grid state in GUI. Expects an existing window.
 
-    // std::cout << "DEBUG: Checked location " << checkedLocation.x << checkedLocation.y << '\n';
-    DrawText("Naive solver", 5, 5, 6, RED);
     ClearBackground(RAYWHITE);
 
     auto checkedLocation = locationsInOrderVisited.at(locationIdx);
@@ -168,6 +166,7 @@ void _solverDraw(gridType& grid, int locationIdx) {
                 DrawRectangle(visitedLoc.x * cellWidth, visitedLoc.y * cellHeight + 1, cellWidth - 1, cellHeight - 1,
                               clr);
             }
+            DrawText("Naive solver", 5, 5, 6, RED);
 
             // Draw the walls
             int val = grid.at(y).at(x);
@@ -180,20 +179,18 @@ void _solverDraw(gridType& grid, int locationIdx) {
 }
 
 int main() {
-    // TODO: make display nicer
-    //  - maybe indicate the start point
-    //  - optionally (?) trace the path, e.g. by having fading pink squares
     srand(time(NULL));
     int rows = 6, cols = 6;
     indicesChecked.reserve(rows * cols);
     gridType grid = generateGrid(rows, cols);
 
-    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other doesn't
+    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
+    // but doesn't show it
     displayMazeBuildSteps(&grid);
     // generateMazeInstantly(&grid);
 
     // these should be 0 indexed
-    XY start = {1, 1};
+    XY start = {0, 0};
     XY end = {5, 5};
     naiveSolver(grid, start, end);
 
