@@ -1,5 +1,7 @@
 // Given a grid, find a contiguous line between the defined start point and end point
-// This is a naive solver.
+// This solver, for every cell, moves in a random direction until it finds the target while never visiting a cell twice.
+// If it reaches a dead end, it jumps back to the last cell whose neighbors it has not all visited, and then resumes
+// execution.
 
 #include <raylib.h>
 #include <algorithm>
@@ -109,16 +111,15 @@ void animateSolution(gridType& grid) {
     // todo: set up headers etc so that we don't see the _simulationDraw function as being available in this file
 
     // Forward declaration
-    void _solverDraw(gridType & grid, XY & checkedLocation);
+    void _solverDraw(gridType & grid, int locationIdx);
 
     InitWindow(xPixels, yPixels, "Maze");
+    int locationIndex = 0;
     while (!WindowShouldClose()) {
         BeginDrawing();
-        if (locationsInOrderVisited.size() > 0) {
-            XY checkedLocation = locationsInOrderVisited.front();
-            locationsInOrderVisited.pop_front();
-            // std::cout << "DEBUG: " << checkedLocation.x << checkedLocation.y << '\n';
-            _solverDraw(grid, checkedLocation);
+        if (locationsInOrderVisited.size() > locationIndex) {
+            _solverDraw(grid, locationIndex);
+            locationIndex++;
         }
         EndDrawing();
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -126,21 +127,49 @@ void animateSolution(gridType& grid) {
     CloseWindow();
 }
 
-void _solverDraw(gridType& grid, XY& checkedLocation) {
+Color gradateColor(Color start, Color target, int i, int locationIdx) {
+    auto d1 = target.r - start.r;
+    auto d2 = target.g - start.g;
+    auto d3 = target.b - start.b;
+    auto d4 = target.a - start.a;
+
+    float multiplier = (float)i / locationIdx;
+    int d1Col = target.r - (d1 * (multiplier));
+    int d2Col = target.g - (d2 * (multiplier));
+    int d3Col = target.b - (d3 * (multiplier));
+    int d4Col = target.a - (d4 * (multiplier));
+    Color clr = Color(d1Col, d2Col, d3Col, d4Col);
+    std::cout << "Colors=" << d1Col << ',' << d2Col << ',' << d3Col << ',' << d4Col << '\n';
+    return clr;
+}
+
+void _solverDraw(gridType& grid, int locationIdx) {
     // Helper function, to draw grid state in GUI. Expects an existing window.
 
     // std::cout << "DEBUG: Checked location " << checkedLocation.x << checkedLocation.y << '\n';
     DrawText("Naive solver", 5, 5, 6, RED);
     ClearBackground(RAYWHITE);
+
+    auto checkedLocation = locationsInOrderVisited.at(locationIdx);
+
     for (int y = 0; y < grid.size(); y++) {
         for (int x = 0; x < grid.at(0).size(); x++) {
-            // the offsets are intended to stop this shape from being drawn over the walls of the maze
+            // The offsets are intended to stop this shape from being drawn over the walls of the maze
             auto mazeEndpoint = locationsInOrderVisited.back();
-            DrawRectangle(mazeEndpoint.x * cellWidth, mazeEndpoint.y * cellHeight + 1, cellWidth - 1,
-                          cellHeight - 1, LIGHTGRAY);
+            DrawRectangle(mazeEndpoint.x * cellWidth, mazeEndpoint.y * cellHeight + 1, cellWidth - 1, cellHeight - 1,
+                          LIGHTGRAY);
             DrawRectangle(checkedLocation.x * cellWidth, checkedLocation.y * cellHeight + 1, cellWidth - 1,
                           cellHeight - 1, PINK);
 
+            // Add indication of previously visited cells
+            for (int i = 0; i < locationIdx; i++) {
+                Color clr = gradateColor(PINK, RAYWHITE, i, locationIdx);
+                auto visitedLoc = locationsInOrderVisited.at(i);
+                DrawRectangle(visitedLoc.x * cellWidth, visitedLoc.y * cellHeight + 1, cellWidth - 1, cellHeight - 1,
+                              clr);
+            }
+
+            // Draw the walls
             int val = grid.at(y).at(x);
             if (val != SOUTH && !(y < grid.size() - 1 && grid.at(y + DY[SOUTH])[x] == NORTH))
                 DrawLine(x * cellWidth, (y + 1) * cellHeight, (x + 1) * cellWidth, (y + 1) * cellHeight, BLACK);
@@ -152,7 +181,6 @@ void _solverDraw(gridType& grid, XY& checkedLocation) {
 
 int main() {
     // TODO: make display nicer
-    //  - indicate the end point
     //  - maybe indicate the start point
     //  - optionally (?) trace the path, e.g. by having fading pink squares
     srand(time(NULL));
@@ -160,13 +188,9 @@ int main() {
     indicesChecked.reserve(rows * cols);
     gridType grid = generateGrid(rows, cols);
 
-    // instantly generate the maze
-    generateMazeInstantly(&grid);
-    // displayMazeIterations(&grid);
-
-    // XY startLoc = {0, 0};
-    // XY endLoc = {0, 0};
-    // naiveSolver(&grid, startLoc, endLoc);
+    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other doesn't
+    displayMazeBuildSteps(&grid);
+    // generateMazeInstantly(&grid);
 
     // these should be 0 indexed
     XY start = {1, 1};
