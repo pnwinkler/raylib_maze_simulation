@@ -13,6 +13,11 @@ struct XY {
     int y;
 };
 
+struct canvasDims {
+    int x;
+    int y;
+};
+
 gridType generateGrid(int rows, int cols) {
     gridType grid;
     for (int y = 0; y < rows; y++) {
@@ -23,6 +28,12 @@ gridType generateGrid(int rows, int cols) {
         }
     }
     return grid;
+}
+
+canvasDims calculateCanvasDimensions() {
+    int x = COLS * CELLWIDTH;
+    int y = ROWS * CELLHEIGHT;
+    return canvasDims{x, y};
 }
 
 void displayMazeInConsole(gridType& grid) {

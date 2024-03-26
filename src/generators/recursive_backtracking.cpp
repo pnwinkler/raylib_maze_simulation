@@ -1,17 +1,9 @@
-/*
-    **WARNING**: on large mazes, this program may CRASH your computer!
-     That's probably due to a stack overflow from the recursive calls (in my case it crashed
-     when there were ~1320 tasks in queue when operating on 1920 by 1080px with cell width
-     and height both set to 20)
-*/
-// see https://zig.news/perky/hot-reloading-with-raylib-4bf9 for interesting ideas
+// Generate a maze using the recursive backtracking algorithm and display it graphically
 
-// Generate a maze using the recursive backtracking algorithm and display it in the console
 #include <raylib.h>
 #include <deque>
 #include <functional>  // for std::bind
 #include <future>
-#include <iostream>
 #include <random>
 #include "../constants.cpp"
 #include "../utils.cpp"
@@ -22,16 +14,6 @@
 //------------------------------------------------------------------------------
 // Set up data structures to describe passage direction and aid with maze creation
 //------------------------------------------------------------------------------
-
-// The dimensions of each cell that we'll create. The cellWidth and cellHeight should
-// divide into xPixels and yPixels respectively, with 0 remainder.
-constexpr int cellWidth = 40;
-constexpr int cellHeight = 40;
-
-// Did you read the warning above?
-constexpr int xPixels = 800;
-constexpr int yPixels = 800;
-constexpr int fps = 10;
 
 // hack: used to indicate whether it's the first tick of our simulation
 bool firstSimulationTick = true;
@@ -66,7 +48,6 @@ void simulationTick(gridType* grid) {
 
     if (firstSimulationTick) {
         firstSimulationTick = false;
-        // _displayMazeInConsole(grid);
         _carvePassagesFrom(0, 0, grid);
         return;
     }
@@ -77,26 +58,15 @@ void simulationTick(gridType* grid) {
         auto fut = task.get_future();
         task();
         changeEffected = fut.get();
-
-        // All tasks have finished running. We do one last display update,
-        // to update the task count in the graphical window
-        // if (taskDeque.empty()) {
-        // _simulationDraw(grid);
-        // }
     }
-
-    // We only need to update the display if the grid's state has changed
-    // if (changeEffected) {
-    //     // _simulationDraw(grid);
-    //     _displayMazeInConsole(grid);
-    // }
 }
 
 void displayMazeBuildSteps(gridType* grid) {
     // Displays the state of the maze in the graphical window, progressing one simulation tick
     // per frame displayed
-    InitWindow(xPixels, yPixels, "Maze generation: recursive backtracking");
-    SetTargetFPS(fps);
+    auto dims = calculateCanvasDimensions();
+    InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
+    SetTargetFPS(FPS);
 
     void _simulationDraw(gridType * grid);
     while (!WindowShouldClose()) {
@@ -126,14 +96,14 @@ void _simulationDraw(gridType* grid) {
             int val = grid->at(y).at(x);
 
             if (val != SOUTH && !(y < grid->size() - 1 && grid->at(y + DY[SOUTH])[x] == NORTH))
-                DrawLine(x * cellWidth, (y + 1) * cellHeight, (x + 1) * cellWidth, (y + 1) * cellHeight, BLACK);
+                DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
             if (val != EAST && !(x < grid->at(0).size() - 1 && grid->at(y)[x + DX[EAST]] == WEST))
-                DrawLine((x + 1) * cellWidth, y * cellHeight, (x + 1) * cellWidth, (y + 1) * cellHeight, BLACK);
+                DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
 
             if (mrge.x0 == x && mrge.y0 == y)
-                DrawRectangle(mrge.x0 * cellWidth, mrge.y0 * cellHeight, cellWidth, cellHeight, PINK);
+                DrawRectangle(mrge.x0 * CELLWIDTH, mrge.y0 * CELLHEIGHT, CELLWIDTH, CELLHEIGHT, PINK);
             if (mrge.x1 == x && mrge.y1 == y)
-                DrawRectangle(mrge.x1 * cellWidth, mrge.y1 * cellHeight, cellWidth, cellHeight, PINK);
+                DrawRectangle(mrge.x1 * CELLWIDTH, mrge.y1 * CELLHEIGHT, CELLWIDTH, CELLHEIGHT, PINK);
         }
     }
 }
@@ -202,14 +172,10 @@ bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gr
             grid->at(startY).at(startX) = direction;
             mrge.x0 = startX;
             mrge.y0 = startY;
-            // std::cout << "Debug: changed start (" << startY << "," << startX << ") from " << DEBUG_1 << " to " <<
-            // direction << '\n';
         }
         grid->at(newY).at(newX) = OPPOSITE[direction];
         mrge.x1 = newX;
         mrge.y1 = newY;
-        // std::cout << "Debug: changed target (" << newY << "," << newX << ") from " << DEBUG_2 << " to " <<
-        // OPPOSITE[direction] << std::endl;
     }
     // auto x = [&](int startX, int startY, gridType* grid){return _carvePassagesFrom(newX, newY, grid);};
     std::packaged_task<bool()> task(std::bind(_carvePassagesFrom, newX, newY, grid));
@@ -221,14 +187,14 @@ bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gr
 // then fix imports!
 
 // int main() {
-//     if (xPixels % cellWidth != 0 || yPixels % cellHeight != 0) {
+//     if (xPixels % CELLWIDTH != 0 || yPixels % CELLHEIGHT != 0) {
 //         std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels
 //                   << ") cannot be neatly divided by cell dimensions."
 //                   << " This may result in a maze that doesn't neatly fit the screen\n";
 //     }
 //
 //     srand(time(NULL));
-//     gridType grid = generateGrid((int)xPixels / cellWidth, (int)yPixels / cellHeight);
+//     gridType grid = generateGrid((int)xPixels / CELLWIDTH, (int)yPixels / CELLHEIGHT);
 //
 //     generateMazeInstantly(&grid);
 //     displayMazeIterations(&grid);

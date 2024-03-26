@@ -4,6 +4,25 @@
 // Constants used by multiple files should go here
 #include <unordered_map>
 
+//------------------------------------------------------------------------------
+// Display related constants
+//------------------------------------------------------------------------------
+
+/*
+    **WARNING**: don't set the ROWS and COLS values very high, and the CELLWIDTH and CELLHEIGHT values very low. Doing
+   so can result in STACK OVERFLOW when executing a recursive algorithm. Your OS should just kill the program, but it's
+   possible that it will CRASH instead. In my case it crashed when there were ~1320 tasks in queue.
+*/
+constexpr int ROWS = 20;
+constexpr int COLS = 20;
+constexpr int FPS = 10;
+constexpr int CELLWIDTH = 40;
+constexpr int CELLHEIGHT = 40;
+
+
+//------------------------------------------------------------------------------
+// Algorithm related constants
+//------------------------------------------------------------------------------
 constexpr int NORTH = 1, SOUTH = 2, EAST = 4, WEST = 8;
 
 // The difference in x for each direction
