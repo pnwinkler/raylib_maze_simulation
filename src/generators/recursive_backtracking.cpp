@@ -7,9 +7,6 @@
 #include <random>
 #include "../constants.cpp"
 #include "../utils.cpp"
-// TODO: re-enable this once done with solvers/solver.cpp stuff
-// #include "./constants.cpp"
-// #include "./utils.cpp"
 
 //------------------------------------------------------------------------------
 // Set up data structures to describe passage direction and aid with maze creation
@@ -17,10 +14,6 @@
 
 // hack: used to indicate whether it's the first tick of our simulation
 bool firstSimulationTick = true;
-
-//------------------------------------------------------------------------------
-// Functions for displaying the maze
-//------------------------------------------------------------------------------
 
 // Holds the X and Y locations of the most recent edit on the grid
 // Each edit can affect 0-2 locations inclusive.
@@ -36,21 +29,22 @@ struct mostRecentGridEdit mrge;
 std::deque<std::packaged_task<bool()>> taskDeque;
 
 void simulationTick(gridType* grid) {
-    // Forward declarations
-    bool _carvePassagesFrom(int startX, int startY, gridType* grid);
-    // void _displayMazeInConsole(gridType * grid);
+    // Progress the state of the maze generation by one tick.
 
-    // The changeEffected variable is used to indicate whether a change to the grid's state has occurred.
-    // I think it's better a better user experience if we fast forward over tasks that don't change grid state.
-    // This variable lets us do that. It's because of our queueing system, that our task queue sometimes
-    // contains tasks which don't change the grid's state.
-    auto changeEffected = false;
+    // Forward declaration
+    bool _carvePassagesFrom(XY & start, gridType * grid);
 
     if (firstSimulationTick) {
         firstSimulationTick = false;
-        _carvePassagesFrom(0, 0, grid);
+        XY start = {0, 0};
+        _carvePassagesFrom(start, grid);
         return;
     }
+
+    // The changeEffected variable is used to indicate whether a change to the grid's state has occurred.
+    // It lets us fast forward over tasks that don't change grid state (which is a better user experience IMO).
+    // Recursive backtracking inherently performs ticks that don't change maze state.
+    auto changeEffected = false;
 
     while (!changeEffected && !taskDeque.empty()) {
         std::packaged_task<bool()> task = std::move(taskDeque.front());
@@ -68,6 +62,7 @@ void displayMazeBuildSteps(gridType* grid) {
     InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
     SetTargetFPS(FPS_GENERATING);
 
+    // Forward declaration
     void _simulationDraw(gridType * grid);
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -112,38 +107,26 @@ void _simulationDraw(gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool _carvePassagesFrom(int startX, int startY, gridType* grid) {
+bool _carvePassagesFrom(XY& start, gridType* grid) {
     // Connects two cells in the grid, subject to constraints.
-    // Intended to be called indirectly.
 
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
-
     std::random_device rd;
     std::mt19937 g(rd());
-
     std::shuffle(directions.begin(), directions.end(), g);
-    for (const auto& direction : directions) {
-        int newX = startX + DX[direction];
-        int newY = startY + DY[direction];
 
-        bool targetInBounds = newY >= 0 && newY < (int)grid->size() && newX >= 0 && newX < (int)grid->at(0).size();
-        if (targetInBounds && grid->at(newY).at(newX) == 0) {
+    for (const auto& direction : directions) {
+        XY neighbor = {start.x + DX[direction], start.y + DY[direction]};
+        bool targetInBounds = inBounds(*grid, neighbor);
+
+        // bool targetInBounds = newY >= 0 && newY < (int)grid->size() && newX >= 0 && newX < (int)grid->at(0).size();
+        if (targetInBounds && grid->at(neighbor.y).at(neighbor.x) == 0) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier
 
-            // bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid);
-            // these 2 lines each give identical error messages on compile time. Leaving the forward decl above or
-            // removing it also has no impact on the error messages std::packaged_task<bool()> task([this, startX,
-            // startY, newX, newY, direction, &grid] mutable {carvingHelper(startX, startY, newX, newY, direction,
-            // grid);}); std::packaged_task<bool()> task([this, startX, startY, newX, newY, direction, &grid] mutable
-            // {this->carvingHelper(startX, startY, newX, newY, direction, grid);});
-            // taskDeque.push_front(std::move(task));
-
-            // std::packaged_task<bool(int, int, int, int, int, gridType*)> x( carvingHelper(startX, startY, newX, newY,
-            // direction, grid));
-
-            bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid);
-            std::packaged_task<bool()> task(std::bind(carvingHelper, startX, startY, newX, newY, direction, grid));
+            // Forward declaration
+            bool carvingHelper(XY & start, XY & target, int direction, gridType* grid);
+            std::packaged_task<bool()> task(std::bind(carvingHelper, start, neighbor, direction, grid));
             taskDeque.push_front(std::move(task));
         }
     }
@@ -151,15 +134,13 @@ bool _carvePassagesFrom(int startX, int startY, gridType* grid) {
     return false;
 }
 
-bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gridType* grid) {
+bool carvingHelper(XY& start, XY& target, int direction, gridType* grid) {
     // Connect source and target cells. Returns true if it changed something, else false.
     // Having this as a separate function allows us to have one pop of the task queue correspond
     // to 0-1 updates of the board's state.
 
-    // auto DEBUG_1 = grid->at(startY).at(startX);
-    // auto DEBUG_2 = grid->at(newY).at(newX);
-    bool targetInBounds = newY >= 0 && newY < (int)grid->size() && newX >= 0 && newX < (int)grid->at(0).size();
-    bool cond = targetInBounds && grid->at(newY).at(newX) == 0;
+    bool targetInBounds = inBounds(*grid, target);
+    bool cond = targetInBounds && grid->at(target.y).at(target.x) == 0;
 
     if (cond) {
         mrge.y0 = -1;
@@ -168,17 +149,17 @@ bool carvingHelper(int startX, int startY, int newX, int newY, int direction, gr
         mrge.y1 = -1;
 
         // Don't overwrite existing connections
-        if (grid->at(startY).at(startX) == 0) {
-            grid->at(startY).at(startX) = direction;
-            mrge.x0 = startX;
-            mrge.y0 = startY;
+        if (grid->at(start.y).at(start.x) == 0) {
+            grid->at(start.y).at(start.x) = direction;
+            mrge.x0 = start.x;
+            mrge.y0 = start.y;
         }
-        grid->at(newY).at(newX) = OPPOSITE[direction];
-        mrge.x1 = newX;
-        mrge.y1 = newY;
+        grid->at(target.y).at(target.x) = OPPOSITE[direction];
+        mrge.x1 = target.x;
+        mrge.y1 = target.y;
     }
-    // auto x = [&](int startX, int startY, gridType* grid){return _carvePassagesFrom(newX, newY, grid);};
-    std::packaged_task<bool()> task(std::bind(_carvePassagesFrom, newX, newY, grid));
+
+    std::packaged_task<bool()> task(std::bind(_carvePassagesFrom, target, grid));
     taskDeque.push_front(std::move(task));
     return cond;
 }
