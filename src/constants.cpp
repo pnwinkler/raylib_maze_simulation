@@ -15,10 +15,12 @@
 */
 constexpr int ROWS = 20;
 constexpr int COLS = 20;
-constexpr int FPS = 10;
 constexpr int CELLWIDTH = 40;
 constexpr int CELLHEIGHT = 40;
 
+// the FPS to use when generating and solving the maze respectively
+constexpr int FPS_GENERATING = 15;
+constexpr int FPS_SOLVING = 10;
 
 //------------------------------------------------------------------------------
 // Algorithm related constants

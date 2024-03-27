@@ -66,7 +66,7 @@ void displayMazeBuildSteps(gridType* grid) {
     // per frame displayed
     auto dims = calculateCanvasDimensions();
     InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
-    SetTargetFPS(FPS);
+    SetTargetFPS(FPS_GENERATING);
 
     void _simulationDraw(gridType * grid);
     while (!WindowShouldClose()) {

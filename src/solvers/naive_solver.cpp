@@ -19,12 +19,7 @@ std::unordered_set<int> indicesChecked = {};
 std::deque<XY> locationsInOrderVisited = {};
 
 bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
-    // Perform the next step of the naive algorithm. Return true if target was found, else false
-    std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
-
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(directions.begin(), directions.end(), g);
+    // Perform the next step of the algorithm. Return true if target was found, else false.
 
     XY currentLocation = locationsToCheck.front();
     locationsToCheck.pop_front();
@@ -38,17 +33,21 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         return true;
     }
 
+    std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(directions.begin(), directions.end(), g);
+
     for (auto direction : directions) {
-        XY targetedCell = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
-        bool targetInBounds = inBounds(grid, targetedCell);
-        // this can go out of bounds
-        bool indexChecked = indicesChecked.contains((targetedCell.y * grid.size()) + targetedCell.x);
-        // either our cell points to that cell or that cell points to our cell
+        XY neighbor = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
+        bool targetInBounds = inBounds(grid, neighbor);
+        bool indexChecked = indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
+        // Either our cell points to that cell or that cell points to our cell
         bool noWallBetween = targetInBounds && (grid[currentLocation.y][currentLocation.x] == direction ||
-                                                grid[targetedCell.y][targetedCell.x] == OPPOSITE[direction]);
+                                                grid[neighbor.y][neighbor.x] == OPPOSITE[direction]);
 
         if (!indexChecked && noWallBetween) {
-            locationsToCheck.push_back(targetedCell);
+            locationsToCheck.push_back(neighbor);
         }
     }
 
@@ -56,8 +55,8 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
 }
 
 void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
-    // Given a valid maze, return a path within that maze, connecting the start and end locations,
-    // while respecting maze walls
+    // Given a valid maze, find a path within that maze, connecting the start and end locations,
+    // while respecting maze walls.
     if (endLoc.x >= grid.at(0).size() || endLoc.y >= grid.size()) {
         throw std::invalid_argument("Target location out of grid bounds");
     }
@@ -74,9 +73,7 @@ void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     if (!found) {
         std::cerr << "Failed to find solution connecting points (" << startLoc.y << "," << startLoc.x << ") and ("
                   << endLoc.x << "," << endLoc.y << ")" << std::endl;
-        return;
     }
-    return;
 }
 
 void animateSolution(gridType& grid) {
@@ -85,17 +82,18 @@ void animateSolution(gridType& grid) {
     // Forward declaration
     void _solverDraw(gridType & grid, int locationIdx);
     auto dims = calculateCanvasDimensions();
+    SetTargetFPS(FPS_SOLVING);
 
     InitWindow(dims.x, dims.y, "Maze solving: naive recursion");
     int locationIndex = 0;
     while (!WindowShouldClose()) {
         BeginDrawing();
-        if (locationsInOrderVisited.size() > locationIndex) {
+        if (locationIndex < locationsInOrderVisited.size()) {
             _solverDraw(grid, locationIndex);
             locationIndex++;
         }
         EndDrawing();
-        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000/FPS_SOLVING));
     }
     CloseWindow();
 }
