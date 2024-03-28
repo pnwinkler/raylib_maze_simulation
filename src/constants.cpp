@@ -13,14 +13,14 @@
    so can result in STACK OVERFLOW when executing a recursive algorithm. Your OS should just kill the program, but it's
    possible that it will CRASH instead. In my case it crashed when there were ~1320 tasks in queue.
 */
-constexpr int ROWS = 20;
-constexpr int COLS = 20;
+constexpr int ROWS = 15;
+constexpr int COLS = 15;
 constexpr int CELLWIDTH = 40;
 constexpr int CELLHEIGHT = 40;
 
 // the FPS to use when generating and solving the maze respectively
 constexpr int FPS_GENERATING = 15;
-constexpr int FPS_SOLVING = 10;
+constexpr int FPS_SOLVING = 3;
 
 //------------------------------------------------------------------------------
 // Algorithm related constants

@@ -160,24 +160,24 @@ void _solverDraw(gridType& grid, int locationIdx) {
     }
 }
 
-int main() {
-    // TODO:
-    //  improve the graphical display by:
-    //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
-    //  make a proximity based recursive solver once done with this solver
-    srand(time(NULL));
-    indicesChecked.reserve(ROWS * COLS);
-    gridType grid = generateGrid(ROWS, COLS);
-
-    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
-    // but doesn't show it
-    displayMazeBuildSteps(&grid);
-    // generateMazeInstantly(&grid);
-
-    // these should be 0 indexed
-    XY start = {0, 0};
-    XY end = {18, 18};
-    naiveSolver(grid, start, end);
-
-    animateSolution(grid);
-}
+// int main() {
+//     // TODO:
+//     //  improve the graphical display by:
+//     //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
+//     //  make a proximity based recursive solver once done with this solver
+//     srand(time(NULL));
+//     indicesChecked.reserve(ROWS * COLS);
+//     gridType grid = generateGrid(ROWS, COLS);
+//
+//     // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
+//     // but doesn't show it
+//     displayMazeBuildSteps(&grid);
+//     // generateMazeInstantly(&grid);
+//
+//     // these should be 0 indexed
+//     XY start = {0, 0};
+//     XY end = {18, 18};
+//     naiveSolver(grid, start, end);
+//
+//     animateSolution(grid);
+// }

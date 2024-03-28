@@ -82,7 +82,7 @@ void generateMazeInstantly(gridType* grid) {
 }
 
 void _simulationDraw(gridType* grid) {
-    // Helper function, to draw grid state in GUI. Expects an existing window.
+    // Helps draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
     DrawText(("Tasks " + std::to_string(taskDeque.size())).c_str(), 10, 10, 10, MAROON);
@@ -119,7 +119,6 @@ bool _carvePassagesFrom(XY& start, gridType* grid) {
         XY neighbor = {start.x + DX[direction], start.y + DY[direction]};
         bool targetInBounds = inBounds(*grid, neighbor);
 
-        // bool targetInBounds = newY >= 0 && newY < (int)grid->size() && newX >= 0 && newX < (int)grid->at(0).size();
         if (targetInBounds && grid->at(neighbor.y).at(neighbor.x) == 0) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier

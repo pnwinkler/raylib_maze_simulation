@@ -12,7 +12,10 @@ bin/%.o: src/solvers/%.cpp $(DEPS)
 	
 
 # Rule to build the final executable
-solver: src/solvers/naive_solver.cpp
+# solver: src/solvers/naive_recursive_solver.cpp
+	# $(CC) -o bin/$@ $^ $(CFLAGS)
+
+solver: src/solvers/weighted_proximity_recursive.cpp
 	$(CC) -o bin/$@ $^ $(CFLAGS)
 
 recursive_backtracking: $(OBJ)
