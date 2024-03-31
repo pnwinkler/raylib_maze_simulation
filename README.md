@@ -15,3 +15,26 @@ This is my first project using:
 - Maze-related algorithms
 
 Therefore, this project's code style and logical structure should not necessarily be considered good practice.
+
+# How to build for offline use (instructions incomplete, pending update)
+- Clone
+- cd into folder
+- configure params in constants.cpp
+- run this command: `make PLATFORM=PLATFORM_DESKTOP`
+- run the executable from bin, e.g. `./bin/solver`
+
+# How to build for web using WASM (instructions incomplete, pending update)
+- Clone
+- cd into folder
+- configure params in constants.cpp
+- run this command: `make PLATFORM=PLATFORM_WEB`
+- run this command: `python -m http.server 8000`
+- open in your browser the html file, like this `http://localhost:8000/path/to/game.html`. Provide the full path to the html file, minus the home/username bit, and make sure the port matches that usewd by the python command above.
+
+
+## Useful resources 
+Some of these docs are slightly out of date, but they should convey the gist of how WASM, Emscripten, and Raylib operate together.
+
+Mozilla's WASM docs https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm
+Emscripten docs https://emscripten.org/docs/compiling/Building-Projects.html#building-projects
+Raylib docs https://github.com/raysan5/raylib/wiki/Working-for-Web-(HTML5)
