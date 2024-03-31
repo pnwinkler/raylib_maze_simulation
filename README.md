@@ -35,6 +35,6 @@ Therefore, this project's code style and logical structure should not necessaril
 ## Useful resources 
 Some of these docs are slightly out of date, but they should convey the gist of how WASM, Emscripten, and Raylib operate together.
 
-Mozilla's WASM docs https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm 
-Emscripten docs https://emscripten.org/docs/compiling/Building-Projects.html#building-projects 
-Raylib docs https://github.com/raysan5/raylib/wiki/Working-for-Web-(HTML5) 
+Mozilla's WASM docs https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm  
+Emscripten docs https://emscripten.org/docs/compiling/Building-Projects.html#building-projects  
+Raylib docs https://github.com/raysan5/raylib/wiki/Working-for-Web-(HTML5)
