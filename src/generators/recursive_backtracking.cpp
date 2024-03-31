@@ -1,15 +1,22 @@
 // Generate a maze using the recursive backtracking algorithm and display it graphically
 
-#include <raylib.h>
+#include "recursive_backtracking.hpp"
+#include <algorithm>
 #include <deque>
 #include <functional>  // for std::bind
 #include <future>
 #include <random>
+#include "../../lib/raylib.h"
 #include "../constants.cpp"
 #include "../utils.cpp"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
+using namespace RB;
 
 //------------------------------------------------------------------------------
-// Set up data structures to describe passage direction and aid with maze creation
+// Set up requisite data structures and variables to aid with maze creation
 //------------------------------------------------------------------------------
 
 // hack: used to indicate whether it's the first tick of our simulation
@@ -28,16 +35,15 @@ struct mostRecentGridEdit mrge;
 // Holds tasks required for simulation, in a queue, to be called later
 std::deque<std::packaged_task<bool()>> taskDeque;
 
-void simulationTick(gridType* grid) {
-    // Progress the state of the maze generation by one tick.
+recursive_backtracking rb;
 
-    // Forward declaration
-    bool _carvePassagesFrom(XY & start, gridType * grid);
+void recursive_backtracking::simulationTick(gridType* grid) {
+    // Progress the state of the maze generation by one tick.
 
     if (firstSimulationTick) {
         firstSimulationTick = false;
         XY start = {0, 0};
-        _carvePassagesFrom(start, grid);
+        carvePassagesFrom(start, grid);
         return;
     }
 
@@ -55,33 +61,53 @@ void simulationTick(gridType* grid) {
     }
 }
 
-void displayMazeBuildSteps(gridType* grid) {
+void _wrapperRBGenWasm(void* arg) {
+    rb.WasmMazeGeneratorUpdateDrawFrame(arg);
+}
+
+void recursive_backtracking::WasmMazeGeneratorUpdateDrawFrame(void* arg) {
+    gridType* grid_ptr = static_cast<gridType*>(arg);
+
+    BeginDrawing();
+    _simulationDraw(grid_ptr);
+    simulationTick(grid_ptr);
+    EndDrawing();
+}
+
+void recursive_backtracking::displayMazeBuildSteps(gridType* grid) {
     // Displays the state of the maze in the graphical window, progressing one simulation tick
     // per frame displayed
     auto dims = calculateCanvasDimensions();
     InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
-    SetTargetFPS(FPS_GENERATING);
 
-    // Forward declaration
-    void _simulationDraw(gridType * grid);
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        _simulationDraw(grid);
-        // todo: set this up, so that I can simultaneously update the graphical display as well
-        // as the console printout
-        simulationTick(grid);
-        EndDrawing();
+#if defined(PLATFORM_WEB)
+    static_assert(FPS_GENERATING > 0, "FPS_GENERATING must be greater than 0");
+    emscripten_set_main_loop_arg(_wrapperRBGenWasm, grid, FPS_GENERATING, 1);
+#else
+    SetTargetFPS(FPS_GENERATING);
+    while (!WindowShouldClose())  // Detect window close button or ESC key
+    {
+        while (!WindowShouldClose()) {
+            BeginDrawing();
+            _simulationDraw(grid);
+            // todo: set this up, so that I can simultaneously update the graphical display as well
+            // as the console printout
+            simulationTick(grid);
+            EndDrawing();
+        }
     }
+#endif
     CloseWindow();
 }
 
-void generateMazeInstantly(gridType* grid) {
+void recursive_backtracking::generateMazeInstantly(gridType* grid) {
+    // Generates the maze instantly, with no animation
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
 }
 
-void _simulationDraw(gridType* grid) {
+void recursive_backtracking::_simulationDraw(gridType* grid) {
     // Helps draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
@@ -107,8 +133,9 @@ void _simulationDraw(gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool _carvePassagesFrom(XY& start, gridType* grid) {
-    // Connects two cells in the grid, subject to constraints.
+bool recursive_backtracking::carvePassagesFrom(const XY& start, gridType* grid) {
+    // Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
+    // false.
 
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
     std::random_device rd;
@@ -122,21 +149,18 @@ bool _carvePassagesFrom(XY& start, gridType* grid) {
         if (targetInBounds && grid->at(neighbor.y).at(neighbor.x) == 0) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier
-
-            // Forward declaration
-            bool carvingHelper(XY & start, XY & target, int direction, gridType* grid);
-            std::packaged_task<bool()> task(std::bind(carvingHelper, start, neighbor, direction, grid));
+            std::packaged_task<bool()> task(std::bind([this, start, neighbor, direction, grid]() mutable {
+                return carvingHelper(start, neighbor, direction, grid);
+            }));
             taskDeque.push_front(std::move(task));
         }
     }
-    // For our task queue, false indicates that no grid state changes were made
     return false;
 }
 
-bool carvingHelper(XY& start, XY& target, int direction, gridType* grid) {
-    // Connect source and target cells. Returns true if it changed something, else false.
-    // Having this as a separate function allows us to have one pop of the task queue correspond
-    // to 0-1 updates of the board's state.
+bool recursive_backtracking::carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
+    // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
+    // false.
 
     bool targetInBounds = inBounds(*grid, target);
     bool cond = targetInBounds && grid->at(target.y).at(target.x) == 0;
@@ -158,26 +182,19 @@ bool carvingHelper(XY& start, XY& target, int direction, gridType* grid) {
         mrge.y1 = target.y;
     }
 
-    std::packaged_task<bool()> task(std::bind(_carvePassagesFrom, target, grid));
+    rb.carvePassagesFrom(target, grid);
+
+    std::packaged_task<bool()> task(std::bind([this, target, grid]() { return carvePassagesFrom(target, grid); }));
     taskDeque.push_front(std::move(task));
     return cond;
 }
 
-// TODO: add header file (with guard(s)), and set this up to work with that
-// then fix imports!
+int main() {
+    srand(time(NULL));
+    gridType grid = generateGrid(ROWS, COLS);
 
-// int main() {
-//     if (xPixels % CELLWIDTH != 0 || yPixels % CELLHEIGHT != 0) {
-//         std::cout << "Pixel dimensions (" << xPixels << ", " << yPixels
-//                   << ") cannot be neatly divided by cell dimensions."
-//                   << " This may result in a maze that doesn't neatly fit the screen\n";
-//     }
-//
-//     srand(time(NULL));
-//     gridType grid = generateGrid((int)xPixels / CELLWIDTH, (int)yPixels / CELLHEIGHT);
-//
-//     generateMazeInstantly(&grid);
-//     displayMazeIterations(&grid);
-//
-//     return EXIT_SUCCESS;
-// }
+    // rb.generateMazeInstantly(&grid);
+    rb.displayMazeBuildSteps(&grid);
+
+    return EXIT_SUCCESS;
+}
