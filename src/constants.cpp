@@ -35,4 +35,4 @@ std::unordered_map<int, int> DY = {{NORTH, -1}, {SOUTH, 1}, {EAST, 0}, {WEST, 0}
 
 std::unordered_map<int, int> OPPOSITE = {{NORTH, SOUTH}, {SOUTH, NORTH}, {EAST, WEST}, {WEST, EAST}};
 
-#endif /* CONSTANTS_H 8 */
+#endif /* CONSTANTS_H */
