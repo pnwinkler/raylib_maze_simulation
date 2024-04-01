@@ -16,14 +16,14 @@ This is my first project using:
 
 Therefore, this project's code style and logical structure should not necessarily be considered good practice.
 
-# How to build for offline use (instructions incomplete, pending update)
+# How to build for offline use
 - Clone
 - cd into folder
 - configure params in constants.cpp
 - run this command: `make PLATFORM=PLATFORM_DESKTOP`
 - run the executable from bin, e.g. `./bin/solver`
 
-# How to build for web using WASM (instructions incomplete, pending update)
+# How to build for web using WASM
 - Clone
 - cd into folder
 - configure params in constants.cpp

@@ -3,20 +3,31 @@
 // If it reaches a dead end, it jumps back to the last cell whose neighbors it has not all visited, and then resumes
 // execution.
 
-#include <raylib.h>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <thread>
+#include "../../lib/raylib.h"  // For WASM
 #include "../constants.cpp"
-#include "../generators/recursive_backtracking.cpp"
-#include "../utils.cpp"
+#include "../generators/recursive_backtracking.h"
+#include "../utils.h"
 #include "deque"
 #include "unordered_set"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
+using namespace constants;
+using namespace utils;
 
 std::unordered_set<int> indicesChecked = {};
-std::deque<XY> locationsInOrderVisited = {};
+std::deque<utils::XY> locationsInOrderVisited = {};
+
+// Forward declaration
+void _solverDraw(gridType& grid, int locationIdx);
 
 bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     // Perform the next step of the algorithm. Return true if target was found, else false.
@@ -38,7 +49,7 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     std::mt19937 g(rd());
     std::shuffle(directions.begin(), directions.end(), g);
 
-    for (auto direction : directions) {
+    for (const auto& direction : directions) {
         XY neighbor = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
         bool targetInBounds = inBounds(grid, neighbor);
         bool indexChecked = indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
@@ -76,16 +87,28 @@ void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     }
 }
 
+void SolverUpdateDrawFrame(void) {
+    // TODO: get display working, then get transition to maze solving working, too
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+
+    EndDrawing();
+    //----------------------------------------------------------------------------------
+}
+
 void animateSolution(gridType& grid) {
     // todo: set up headers etc so that we don't see the _simulationDraw function as being available in this file
-
-    // Forward declaration
-    void _solverDraw(gridType & grid, int locationIdx);
-    auto dims = calculateCanvasDimensions();
-    SetTargetFPS(FPS_SOLVING);
-
+    auto dims = utils::calculateCanvasDimensions();
     InitWindow(dims.x, dims.y, "Maze solving: naive recursion");
+
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(SolverUpdateDrawFrame, 0, 1);
+#else
     int locationIndex = 0;
+    SetTargetFPS(FPS_SOLVING);
     while (!WindowShouldClose()) {
         BeginDrawing();
         if (locationIndex < locationsInOrderVisited.size()) {
@@ -95,7 +118,7 @@ void animateSolution(gridType& grid) {
         EndDrawing();
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS_SOLVING));
     }
-    CloseWindow();
+#endif
 }
 
 Color gradateColor(Color start, Color target, int i, int locationIdx) {
@@ -160,24 +183,25 @@ void _solverDraw(gridType& grid, int locationIdx) {
     }
 }
 
-// int main() {
-//     // TODO:
-//     //  improve the graphical display by:
-//     //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
-//     //  make a proximity based recursive solver once done with this solver
-//     srand(time(NULL));
-//     indicesChecked.reserve(ROWS * COLS);
-//     gridType grid = generateGrid(ROWS, COLS);
-//
-//     // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
-//     // but doesn't show it
-//     displayMazeBuildSteps(&grid);
-//     // generateMazeInstantly(&grid);
-//
-//     // these should be 0 indexed
-//     XY start = {0, 0};
-//     XY end = {18, 18};
-//     naiveSolver(grid, start, end);
-//
-//     animateSolution(grid);
-// }
+int main() {
+    // TODO:
+    //  improve the graphical display by:
+    //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
+    //  make a proximity based recursive solver once done with this solver
+    srand(time(NULL));
+    indicesChecked.reserve(ROWS * COLS);
+    gridType grid = utils::generateGrid(ROWS, COLS);
+
+    RB::recursive_backtracking rb;
+    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
+    // but doesn't show it
+    // rb.generateMazeInstantlyNoDisplay(&grid);
+    rb.displayMazeBuildSteps(&grid);
+
+    // these should be 0 indexed
+    utils::XY start = {0, 0};
+    utils::XY end = {ROWS - 1, COLS - 1};
+    naiveSolver(grid, start, end);
+
+    animateSolution(grid);
+}
