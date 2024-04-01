@@ -54,8 +54,8 @@ endif
 #------------------------------------------------------------------------------------------------
 # OBJ=bin/recursive_backtracking.o
 
-solver: $(SRC_PATH)/generators/recursive_backtracking.cpp
-	$(CC) -o bin/$@ $^ $(CFLAGS)
+naive_recursive_solver: $(SRC_PATH)/solvers/naive_recursive_solver.cpp
+	$(CC) -o bin/$@ $^ $(CFLAGS) $(SRC_PATH)/generators/recursive_backtracking.cpp 
 
 clean:
 	# rm -f $(OBJ)
