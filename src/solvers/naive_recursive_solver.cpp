@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <thread>
 #include "../../lib/raylib.h"  // For WASM
+#include "naive_recursive_solver.h"
 #include "../constants.cpp"
 #include "../generators/recursive_backtracking.h"
 #include "../utils.h"
@@ -26,10 +27,7 @@ using namespace utils;
 std::unordered_set<int> indicesChecked = {};
 std::deque<utils::XY> locationsInOrderVisited = {};
 
-// Forward declaration
-void _solverDraw(gridType& grid, int locationIdx);
-
-bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
+bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     // Perform the next step of the algorithm. Return true if target was found, else false.
 
     XY currentLocation = locationsToCheck.front();
@@ -37,7 +35,7 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     locationsInOrderVisited.push_back(currentLocation);
     indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
 
-    assert(inBounds(grid, currentLocation));
+    assert(utils::inBounds(grid, currentLocation));
 
     if (currentLocation.y == target.y && currentLocation.x == target.x) {
         std::cout << "FOUND at " << currentLocation.x << ',' << currentLocation.y << '\n';
@@ -65,9 +63,10 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     return false;
 }
 
-void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
+void ns::naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     // Given a valid maze, find a path within that maze, connecting the start and end locations,
     // while respecting maze walls.
+    indicesChecked.reserve(ROWS* COLS);
     if (endLoc.x >= grid.at(0).size() || endLoc.y >= grid.size()) {
         throw std::invalid_argument("Target location out of grid bounds");
     }
@@ -78,7 +77,7 @@ void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     indicesChecked.insert(startLoc.y * grid.size() + startLoc.x);
 
     while (!found && (indicesChecked.size() < grid.size() * grid.at(0).size()) && locationsToCheck.size() > 0) {
-        found = nextStep(grid, endLoc, locationsToCheck);
+        found = ns::nextStep(grid, endLoc, locationsToCheck);
     }
 
     if (!found) {
@@ -87,8 +86,9 @@ void naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
     }
 }
 
-void SolverUpdateDrawFrame(void) {
-    // TODO: get display working, then get transition to maze solving working, too
+void ns::SolverUpdateDrawFrame(void) {
+    // TODO: get this function for WASM working, then get the transition from maze generation to mazedisplay solving working, too
+    //     That probably means interfacing nicely with the new simGui code
     BeginDrawing();
 
     ClearBackground(RAYWHITE);
@@ -99,8 +99,7 @@ void SolverUpdateDrawFrame(void) {
     //----------------------------------------------------------------------------------
 }
 
-void animateSolution(gridType& grid) {
-    // todo: set up headers etc so that we don't see the _simulationDraw function as being available in this file
+void ns::animateSolution(gridType& grid) {
     auto dims = utils::calculateCanvasDimensions();
     InitWindow(dims.x, dims.y, "Maze solving: naive recursion");
 
@@ -112,7 +111,7 @@ void animateSolution(gridType& grid) {
     while (!WindowShouldClose()) {
         BeginDrawing();
         if (locationIndex < locationsInOrderVisited.size()) {
-            _solverDraw(grid, locationIndex);
+            ns::_solverDraw(grid, locationIndex);
             locationIndex++;
         }
         EndDrawing();
@@ -121,7 +120,7 @@ void animateSolution(gridType& grid) {
 #endif
 }
 
-Color gradateColor(Color start, Color target, int i, int locationIdx) {
+Color ns::gradateColor(Color start, Color target, int i, int locationIdx) {
     // Apply a function to return a color between the start and target colors
     auto d1 = target.r - start.r;
     auto d2 = target.g - start.g;
@@ -148,7 +147,7 @@ Color gradateColor(Color start, Color target, int i, int locationIdx) {
     return clr;
 }
 
-void _solverDraw(gridType& grid, int locationIdx) {
+void ns::_solverDraw(gridType& grid, int locationIdx) {
     // Helper function, to draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
@@ -183,25 +182,26 @@ void _solverDraw(gridType& grid, int locationIdx) {
     }
 }
 
-int main() {
-    // TODO:
-    //  improve the graphical display by:
-    //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
-    //  make a proximity based recursive solver once done with this solver
-    srand(time(NULL));
-    indicesChecked.reserve(ROWS * COLS);
-    gridType grid = utils::generateGrid(ROWS, COLS);
+// int main() {
+//     // TODO:
+//     //  improve the graphical display by:
+//     //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
+//     //  make a proximity based recursive solver once done with this solver
+//     srand(time(NULL));
+//     indicesChecked.reserve(ROWS * COLS);
+//     gridType grid = utils::generateGrid(ROWS, COLS);
 
-    RB::recursive_backtracking rb;
-    // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds it
-    // but doesn't show it
-    // rb.generateMazeInstantlyNoDisplay(&grid);
-    rb.displayMazeBuildSteps(&grid);
+//     rb::recursive_backtracking rb;
+//     // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds
+//     it
+//     // but doesn't show it
+//     rb.generateMazeInstantlyNoDisplay(&grid);
+//     // rb.displayMazeBuildSteps(&grid);
 
-    // these should be 0 indexed
-    utils::XY start = {0, 0};
-    utils::XY end = {ROWS - 1, COLS - 1};
-    naiveSolver(grid, start, end);
+//     // these should be 0 indexed
+//     utils::XY start = {0, 0};
+//     utils::XY end = {ROWS - 1, COLS - 1};
+//     naiveSolver(grid, start, end);
 
-    animateSolution(grid);
-}
+//     animateSolution(grid);
+// }
