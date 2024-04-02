@@ -24,6 +24,9 @@ using namespace utils;
 bool _firstSimulationTick = true;
 bool _simulationComplete = false;
 
+// Holds tasks required for simulation, in a queue, to be called later
+std::deque<std::packaged_task<bool()>> taskDeque;
+
 // Holds the X and Y locations of the most recent edit on the grid
 // Each edit can affect 0-2 locations inclusive.
 struct mostRecentGridEdit {
@@ -34,18 +37,15 @@ struct mostRecentGridEdit {
 };
 struct mostRecentGridEdit mrge;
 
-// Holds tasks required for simulation, in a queue, to be called later
-std::deque<std::packaged_task<bool()>> taskDeque;
+RB::recursive_backtracking rb;
 
-recursive_backtracking rb;
-
-void recursive_backtracking::simulationTick(gridType* grid) {
+void RB::recursive_backtracking::simulationTick(utils::gridType* grid) {
     // Progress the state of the maze generation by one tick.
 
     if (_firstSimulationTick) {
         _firstSimulationTick = false;
         XY start = {0, 0};
-        _carvePassagesFrom(start, grid);
+        rb._carvePassagesFrom(start, grid);
         return;
     }
 
@@ -64,10 +64,10 @@ void recursive_backtracking::simulationTick(gridType* grid) {
 }
 
 void _wrapperRBGenWasm(void* arg) {
-    rb.WasmMazeGeneratorUpdateDrawFrame(arg);
+    rb._WasmMazeGeneratorDraw(arg);
 }
 
-void recursive_backtracking::WasmMazeGeneratorUpdateDrawFrame(void* arg) {
+void RB::recursive_backtracking::_WasmMazeGeneratorDraw(void* arg) {
     gridType* grid_ptr = static_cast<gridType*>(arg);
 
     BeginDrawing();
@@ -79,10 +79,10 @@ void recursive_backtracking::WasmMazeGeneratorUpdateDrawFrame(void* arg) {
     EndDrawing();
 }
 
-void recursive_backtracking::displayMazeBuildSteps(gridType* grid) {
+void RB::recursive_backtracking::displayMazeBuildSteps(utils::gridType* grid) {
     // Displays the state of the maze in the graphical window, progressing one simulation tick
     // per frame displayed
-    auto dims = calculateCanvasDimensions();
+    auto dims = utils::calculateCanvasDimensions();
     InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
 
 #if defined(PLATFORM_WEB)
@@ -105,14 +105,14 @@ void recursive_backtracking::displayMazeBuildSteps(gridType* grid) {
     CloseWindow();
 }
 
-void recursive_backtracking::generateMazeInstantlyNoDisplay(gridType* grid) {
+void RB::recursive_backtracking::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
     // Generates the maze instantly, with no animation
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
 }
 
-void recursive_backtracking::_simulationDraw(gridType* grid) {
+void RB::recursive_backtracking::_simulationDraw(utils::gridType* grid) {
     // Helps draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
@@ -138,7 +138,7 @@ void recursive_backtracking::_simulationDraw(gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* grid) {
+bool RB::recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* grid) {
     // Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
     // false.
 
@@ -163,7 +163,7 @@ bool recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* grid)
     return false;
 }
 
-bool recursive_backtracking::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
+bool RB::recursive_backtracking::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
     // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
     // false.
 
