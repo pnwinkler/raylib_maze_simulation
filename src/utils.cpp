@@ -1,14 +1,15 @@
+#include "utils.h"
 #include <iostream>
 #include <vector>
 #include "constants.cpp"
-#include "utils.h"
 
 using namespace constants;
 
-// Alias
+namespace utils {
+
 typedef std::vector<std::vector<int>> gridType;
 
-utils::gridType utils::generateGrid(const int rows, const int cols) {
+gridType generateGrid(const int rows, const int cols) {
     gridType grid;
     for (int y = 0; y < rows; y++) {
         std::vector<int> newRow;
@@ -20,13 +21,13 @@ utils::gridType utils::generateGrid(const int rows, const int cols) {
     return grid;
 }
 
-utils::canvasDims utils::calculateCanvasDimensions() {
+canvasDims calculateCanvasDimensions() {
     int x = COLS * CELLWIDTH;
     int y = ROWS * CELLHEIGHT;
-    return utils::canvasDims{x, y};
+    return canvasDims{x, y};
 }
 
-void utils::displayMazeInConsole(gridType& grid) {
+void displayMazeInConsole(gridType& grid) {
     // Prints the maze to the console.
 
     // Create top wall
@@ -50,10 +51,12 @@ void utils::displayMazeInConsole(gridType& grid) {
     std::cout << '\n';
 }
 
-bool utils::inBounds(gridType& grid, const int x, const int y) {
+bool inBounds(gridType& grid, const int x, const int y) {
     return y < grid.size() && x < grid[0].size();
 }
 
-bool utils::inBounds(gridType& grid, const XY& location) {
+bool inBounds(gridType& grid, const XY& location) {
     return location.y < grid.size() && location.x < grid[0].size();
 }
+
+};  // namespace utils
