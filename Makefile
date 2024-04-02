@@ -53,10 +53,18 @@ endif
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
 # OBJ=bin/recursive_backtracking.o
+DEPS_MAIN= $(SRC_PATH)/generators/recursive_backtracking.cpp $(SRC_PATH)/utils.cpp $(SRC_PATH)/solvers/naive_recursive_solver.cpp
 
-naive_recursive_solver: $(SRC_PATH)/solvers/naive_recursive_solver.cpp
-	$(CC) -o bin/$@ $^ $(CFLAGS) $(SRC_PATH)/generators/recursive_backtracking.cpp 
+# recursive_generator: $(SRC_PATH)/generators/recursive_backtracking.cpp
+	# $(CC) -o bin/$@ $^ $(CFLAGS)
+
+# naive_recursive_solver: $(SRC_PATH)/solvers/naive_recursive_solver.cpp
+	# $(CC) -o bin/$@ $^ $(CFLAGS) $(SRC_PATH)/generators/recursive_backtracking.cpp $(SRC_PATH)/display/simGui.cpp ./src/utils.cpp
+
+main: $(SRC_PATH)/main.cpp
+	$(CC) -o bin/$@ $(DEPS_MAIN) $^ $(CFLAGS) 
 
 clean:
 	# rm -f $(OBJ)
+	rm -f bin/*
 	rm -f $(basename $(WASM_OUT)).html $(basename $(WASM_OUT)).wasm $(basename $(WASM_OUT)).js
