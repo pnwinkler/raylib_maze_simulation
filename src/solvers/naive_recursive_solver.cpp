@@ -24,8 +24,8 @@
 using namespace constants;
 using namespace utils;
 
-std::unordered_set<int> indicesChecked = {};
-std::deque<utils::XY> locationsInOrderVisited = {};
+static std::unordered_set<int> indicesChecked = {};
+static std::deque<utils::XY> locationsInOrderVisited = {};
 
 bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     // Perform the next step of the algorithm. Return true if target was found, else false.
@@ -66,10 +66,12 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
 void ns::solve(gridType& grid, XY startLoc, XY endLoc) {
     // Given a valid maze, find a path within that maze, connecting the start and end locations,
     // while respecting maze walls.
+    if (!inBounds(grid, startLoc))
+        throw std::invalid_argument("Start location out of grid bounds");
+    if (!inBounds(grid, endLoc))
+        throw std::invalid_argument("End location out of grid bounds");
+
     indicesChecked.reserve(ROWS * COLS);
-    if (endLoc.x >= grid.at(0).size() || endLoc.y >= grid.size()) {
-        throw std::invalid_argument("Target location out of grid bounds");
-    }
     std::deque<XY> locationsToCheck = {};
 
     bool found = false;
@@ -86,29 +88,12 @@ void ns::solve(gridType& grid, XY startLoc, XY endLoc) {
     }
 }
 
-void ns::SolverUpdateDrawFrame(void) {
-    // TODO: get this function for WASM working, then get the transition from maze generation to mazedisplay solving
-    // working, too
-    //     That probably means interfacing nicely with the new simGui code
-    BeginDrawing();
-
-    ClearBackground(RAYWHITE);
-
-    DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-
-    EndDrawing();
-    //----------------------------------------------------------------------------------
-}
-
-#include <stdexcept>
 void ns::animateSolution(gridType& grid) {
-    auto dims = utils::calculateCanvasDimensions();
-    // throw std::invalid_argument("YEET!");
-    InitWindow(dims.x, dims.y, "Maze solving: naive recursion");
+    if (locationsInOrderVisited.size() == 0) {
+        // No attempt has yet been made to solve the maze
+        ns::solve(grid, solverStart, solverEnd);
+    }
 
-#if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(SolverUpdateDrawFrame, FPS_SOLVING, 1);
-#else
     int locationIndex = 0;
     SetTargetFPS(FPS_SOLVING);
     while (!WindowShouldClose()) {
@@ -118,9 +103,8 @@ void ns::animateSolution(gridType& grid) {
             locationIndex++;
         }
         EndDrawing();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS_SOLVING));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS_SOLVING));
     }
-#endif
     CloseWindow();
 }
 

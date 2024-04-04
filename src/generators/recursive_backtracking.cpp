@@ -19,8 +19,7 @@ using namespace utils;
 // Set up requisite data structures and variables to aid with maze creation
 //------------------------------------------------------------------------------
 
-bool _firstSimulationTick = true;
-bool _simulationComplete = false;
+static bool _firstSimulationTick = true;
 
 // Holds tasks required for simulation, in a queue, to be called later
 std::deque<std::packaged_task<bool()>> taskDeque;
@@ -69,7 +68,6 @@ void rb::_wasmFuncToDisplayMazeBuildSteps(void* arg) {
     if (taskDeque.empty()) {
         // repeat one last time, to ensure the final state (e.g. task count) is displayed, then stop
         BeginDrawing();
-        _simulationComplete = true;
         rb::simulationTick(grid_ptr);
         rb::_simulationDraw(grid_ptr);
         EndDrawing();
