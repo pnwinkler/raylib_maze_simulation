@@ -9,7 +9,6 @@ using namespace utils;
 
 namespace ns {
 
-Color gradateColor(Color start, Color target, int i, int locationIdx);
 bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck);
 void animateSolution(gridType& grid);
 void solve(gridType& grid, XY startLoc, XY endLoc);

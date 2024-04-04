@@ -10,7 +10,6 @@ using namespace utils;
 
 namespace ws {
 
-Color gradateColor(Color start, Color target, int i, int locationIdx);
 bool nextStep(gridType& grid, XY target);
 int calculateWeight(XY cell, XY mazeFinish);
 void animateSolution(gridType& grid);

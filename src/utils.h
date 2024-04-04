@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <vector>
+#include "../lib/raylib.h"
 
 namespace utils {
 // Type definitions
@@ -16,11 +17,12 @@ struct canvasDims {
 };
 
 // Function declarations
-gridType generateGrid(const int rows, const int cols);
-canvasDims calculateCanvasDimensions();
-void displayMazeInConsole(gridType& grid);
-bool inBounds(gridType& grid, const int x, const int y);
+Color gradateColor(Color start, Color target, int idx, int maxIdx);
 bool inBounds(gridType& grid, const XY& location);
+bool inBounds(gridType& grid, const int x, const int y);
+canvasDims calculateCanvasDimensions();
+gridType generateGrid(const int rows, const int cols);
+void displayMazeInConsole(gridType& grid);
 
 }  // namespace utils
 

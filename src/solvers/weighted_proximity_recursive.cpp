@@ -1,6 +1,7 @@
-// Given a grid, find a contiguous line between the defined start point and end point
-// This algorithm recursively checks each cell, to see if one of its neighbors is the maze end cell. It never visits a
-// cell twice. It uses a proximity weighting function to prioritize each possible move.
+// Given a grid, find a contiguous line between the defined start point and end point.
+// This algorothm uses a weighted proximity approach, where the next cell to visit is the one with the lowest weight
+// (calculated as the sum of the absolute differences between the cell and the target cell). The algorithm is recursive,
+// and will continue to visit cells until the target is found, or all cells have been visited.
 
 #include "weighted_proximity_recursive.h"
 #include <algorithm>
@@ -197,33 +198,6 @@ void ws::animateSolution(gridType& grid) {
     CloseWindow();
 }
 
-Color ws::gradateColor(Color start, Color target, int i, int locationIdx) {
-    // Apply a function to return a color between the start and target colors
-    auto d1 = target.r - start.r;
-    auto d2 = target.g - start.g;
-    auto d3 = target.b - start.b;
-    auto d4 = target.a - start.a;
-
-    // For i values close to locationIdx, return more similar colors than for i values further from it.
-    // Reasoning: I believe it's visually more appealing (and less distracting) to use fairly uniform colors for
-    // cells visited long ago. This uniformity also effectively exaggerates the constrast between recently visited
-    // cells, making it easier at a glance to reconstruct the recent path taken.
-    float multiplier;
-    if (locationIdx - i < 3) {
-        // Gradate normally
-        multiplier = (float)i / locationIdx;
-    } else {
-        multiplier = (float)i / (locationIdx * 1.5);
-    }
-
-    int d1Col = target.r - (d1 * (multiplier));
-    int d2Col = target.g - (d2 * (multiplier));
-    int d3Col = target.b - (d3 * (multiplier));
-    int d4Col = target.a - (d4 * (multiplier));
-    Color clr = Color(d1Col, d2Col, d3Col, d4Col);
-    return clr;
-}
-
 void ws::_solverDraw(gridType& grid, int locationIdx) {
     // Helper function, to draw grid state in GUI. Expects an existing window.
 
@@ -242,7 +216,7 @@ void ws::_solverDraw(gridType& grid, int locationIdx) {
 
             // Add indication of previously visited cells
             for (int i = 0; i < locationIdx; i++) {
-                Color clr = gradateColor(PURPLE, RAYWHITE, i, locationIdx);
+                Color clr = utils::gradateColor(PURPLE, RAYWHITE, i, locationIdx);
                 auto visitedLoc = locationsInOrderVisited.at(i);
                 DrawRectangle(visitedLoc.x * CELLWIDTH, visitedLoc.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
                               clr);
