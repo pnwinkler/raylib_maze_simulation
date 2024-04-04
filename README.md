@@ -6,7 +6,7 @@ This code generates a maze graphically (displayed using Raylib), and solves it.
 
 # Maze-solving algorithms implemented:
 - Naive recursive algorithm
-- Proximity-weighted recursive algorithm (*coming soon*)
+- Proximity-weighted recursive algorithm
 
 # Caveats
 This is my first project using: 
