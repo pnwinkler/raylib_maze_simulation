@@ -16,7 +16,7 @@ void SolverUpdateDrawFrame(void);
 void _solverDraw(gridType& grid, int locationIdx);
 
 void animateSolution(gridType& grid);
-void naiveSolver(gridType& grid, XY startLoc, XY endLoc);
+void solve(gridType& grid, XY startLoc, XY endLoc);
 }  // namespace ns
 
 #endif /* NAIVE_SOLVER_H */

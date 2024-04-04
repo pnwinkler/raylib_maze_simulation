@@ -3,15 +3,17 @@
 
 // Constants used by multiple files should go here
 #include <unordered_map>
+#include "utils.h"
 
 //------------------------------------------------------------------------------
-// Display related constants
+// Set these constants!
 //------------------------------------------------------------------------------
 
 /*
     **WARNING**: don't set the ROWS and COLS values very high, and the CELLWIDTH and CELLHEIGHT values very low. Doing
    so can result in STACK OVERFLOW when executing a recursive algorithm. Your OS should just kill the program, but it's
-   possible that it will CRASH instead. In my case it crashed when there were ~1320 tasks in queue.
+   possible that it will CRASH instead. In my case it crashed when there were ~1320 tasks in queue. This current
+   combination should result in < 600 tasks in queue.
 */
 namespace constants {
 inline constexpr int ROWS = 15;
@@ -22,6 +24,18 @@ inline constexpr int CELLHEIGHT = 40;
 // the FPS to use when generating and solving the maze respectively
 inline constexpr int FPS_GENERATING = 15;
 inline constexpr int FPS_SOLVING = 3;
+
+// Choose one of the available algorithms to generate the maze
+enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SKIP_GENERATION };
+const generatorAlgorithm currentGenerator = RECURSIVE_BACKTRACKING;
+
+// Choose one of the available algorithms to solve the maze
+enum solverAlgorithm { NAIVE_RECURSIVE, SKIP_SOLVING };
+const solverAlgorithm currentSolver = NAIVE_RECURSIVE;
+
+// Set the start and end points for the solving algorithm. These values should be 0 indexed
+const utils::XY solverStart = {0, 0};
+const utils::XY solverEnd = {ROWS - 1, COLS - 1};
 
 //------------------------------------------------------------------------------
 // Algorithm related constants

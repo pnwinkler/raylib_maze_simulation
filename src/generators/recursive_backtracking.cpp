@@ -3,7 +3,6 @@
 #include "recursive_backtracking.h"
 #include <algorithm>
 #include <deque>
-#include <functional>  // for std::bind
 #include <future>
 #include <random>
 #include "../../lib/raylib.h"
@@ -13,7 +12,6 @@
 #include <emscripten/emscripten.h>
 #endif
 
-using namespace RB;
 using namespace constants;
 using namespace utils;
 
@@ -37,15 +35,13 @@ struct mostRecentGridEdit {
 };
 struct mostRecentGridEdit mrge;
 
-RB::recursive_backtracking rb;
-
-void RB::recursive_backtracking::simulationTick(utils::gridType* grid) {
+void RB::simulationTick(utils::gridType* grid) {
     // Progress the state of the maze generation by one tick.
 
     if (_firstSimulationTick) {
         _firstSimulationTick = false;
         XY start = {0, 0};
-        rb._carvePassagesFrom(start, grid);
+        RB::_carvePassagesFrom(start, grid);
         return;
     }
 
@@ -63,56 +59,47 @@ void RB::recursive_backtracking::simulationTick(utils::gridType* grid) {
     }
 }
 
-void _wrapperRBGenWasm(void* arg) {
-    rb._WasmMazeGeneratorDraw(arg);
-}
-
-void RB::recursive_backtracking::_WasmMazeGeneratorDraw(void* arg) {
+void RB::_wasmFuncToDisplayMazeBuildSteps(void* arg) {
     gridType* grid_ptr = static_cast<gridType*>(arg);
 
     BeginDrawing();
-    _simulationDraw(grid_ptr);
-    simulationTick(grid_ptr);
-    if (taskDeque.empty()) {
-        _simulationComplete = true;
-    }
+    RB::_simulationDraw(grid_ptr);
+    RB::simulationTick(grid_ptr);
     EndDrawing();
+    if (taskDeque.empty()) {
+        // repeat one last time, to ensure the final state (e.g. task count) is displayed, then stop
+        BeginDrawing();
+        _simulationComplete = true;
+        RB::simulationTick(grid_ptr);
+        RB::_simulationDraw(grid_ptr);
+        EndDrawing();
+    }
 }
 
-void RB::recursive_backtracking::displayMazeBuildSteps(utils::gridType* grid) {
-    // Displays the state of the maze in the graphical window, progressing one simulation tick
-    // per frame displayed
-    auto dims = utils::calculateCanvasDimensions();
-    InitWindow(dims.x, dims.y, "Maze generation: recursive backtracking");
+void RB::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
+    // We need to take void* as an argument, so that our WASM and non-WASM funcs can have the same signature
+    // And we need void* because that's what emscripten's set main loop function expects
+    gridType* grid_ptr = static_cast<gridType*>(arg);
 
-#if defined(PLATFORM_WEB)
-    static_assert(FPS_GENERATING > 0, "FPS_GENERATING must be greater than 0");
-    emscripten_set_main_loop_arg(_wrapperRBGenWasm, grid, FPS_GENERATING, 1);
-#else
     SetTargetFPS(FPS_GENERATING);
     while (!WindowShouldClose())  // Detect window close button or ESC key
     {
-        while (!WindowShouldClose()) {
-            BeginDrawing();
-            _simulationDraw(grid);
-            // todo: set this up, so that I can simultaneously update the graphical display as well
-            // as the console printout
-            simulationTick(grid);
-            EndDrawing();
-        }
+        BeginDrawing();
+        RB::_simulationDraw(grid_ptr);
+        RB::simulationTick(grid_ptr);
+        EndDrawing();
     }
-#endif
     CloseWindow();
 }
 
-void RB::recursive_backtracking::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
+void RB::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
     // Generates the maze instantly, with no animation
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
 }
 
-void RB::recursive_backtracking::_simulationDraw(utils::gridType* grid) {
+void RB::_simulationDraw(utils::gridType* grid) {
     // Helps draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
@@ -138,7 +125,7 @@ void RB::recursive_backtracking::_simulationDraw(utils::gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool RB::recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* grid) {
+bool RB::_carvePassagesFrom(const XY& start, gridType* grid) {
     // Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
     // false.
 
@@ -154,7 +141,7 @@ bool RB::recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* g
         if (targetInBounds && grid->at(neighbor.y).at(neighbor.x) == 0) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier
-            std::packaged_task<bool()> task(std::bind([this, start, neighbor, direction, grid]() mutable {
+            std::packaged_task<bool()> task(std::bind([start, neighbor, direction, grid]() mutable {
                 return _carvingHelper(start, neighbor, direction, grid);
             }));
             taskDeque.push_front(std::move(task));
@@ -163,7 +150,7 @@ bool RB::recursive_backtracking::_carvePassagesFrom(const XY& start, gridType* g
     return false;
 }
 
-bool RB::recursive_backtracking::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
+bool RB::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
     // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
     // false.
 
@@ -187,19 +174,9 @@ bool RB::recursive_backtracking::_carvingHelper(const XY& start, const XY& targe
         mrge.y1 = target.y;
     }
 
-    rb._carvePassagesFrom(target, grid);
+    RB::_carvePassagesFrom(target, grid);
 
-    std::packaged_task<bool()> task(std::bind([this, target, grid]() { return _carvePassagesFrom(target, grid); }));
+    std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
     taskDeque.push_front(std::move(task));
     return cond;
 }
-
-// int main() {
-//     srand(time(NULL));
-//     gridType grid = generateGrid(ROWS, COLS);
-
-//     // rb.generateMazeInstantlyNoDisplay(&grid);
-//     rb.displayMazeBuildSteps(&grid);
-
-//     return EXIT_SUCCESS;
-// }

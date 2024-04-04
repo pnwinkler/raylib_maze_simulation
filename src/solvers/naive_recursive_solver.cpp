@@ -3,6 +3,7 @@
 // If it reaches a dead end, it jumps back to the last cell whose neighbors it has not all visited, and then resumes
 // execution.
 
+#include "naive_recursive_solver.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -11,7 +12,6 @@
 #include <stdexcept>
 #include <thread>
 #include "../../lib/raylib.h"  // For WASM
-#include "naive_recursive_solver.h"
 #include "../constants.cpp"
 #include "../generators/recursive_backtracking.h"
 #include "../utils.h"
@@ -63,10 +63,10 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     return false;
 }
 
-void ns::naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
+void ns::solve(gridType& grid, XY startLoc, XY endLoc) {
     // Given a valid maze, find a path within that maze, connecting the start and end locations,
     // while respecting maze walls.
-    indicesChecked.reserve(ROWS* COLS);
+    indicesChecked.reserve(ROWS * COLS);
     if (endLoc.x >= grid.at(0).size() || endLoc.y >= grid.size()) {
         throw std::invalid_argument("Target location out of grid bounds");
     }
@@ -87,7 +87,8 @@ void ns::naiveSolver(gridType& grid, XY startLoc, XY endLoc) {
 }
 
 void ns::SolverUpdateDrawFrame(void) {
-    // TODO: get this function for WASM working, then get the transition from maze generation to mazedisplay solving working, too
+    // TODO: get this function for WASM working, then get the transition from maze generation to mazedisplay solving
+    // working, too
     //     That probably means interfacing nicely with the new simGui code
     BeginDrawing();
 
@@ -99,12 +100,14 @@ void ns::SolverUpdateDrawFrame(void) {
     //----------------------------------------------------------------------------------
 }
 
+#include <stdexcept>
 void ns::animateSolution(gridType& grid) {
     auto dims = utils::calculateCanvasDimensions();
+    // throw std::invalid_argument("YEET!");
     InitWindow(dims.x, dims.y, "Maze solving: naive recursion");
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(SolverUpdateDrawFrame, 0, 1);
+    emscripten_set_main_loop(SolverUpdateDrawFrame, FPS_SOLVING, 1);
 #else
     int locationIndex = 0;
     SetTargetFPS(FPS_SOLVING);
@@ -118,6 +121,7 @@ void ns::animateSolution(gridType& grid) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS_SOLVING));
     }
 #endif
+    CloseWindow();
 }
 
 Color ns::gradateColor(Color start, Color target, int i, int locationIdx) {
@@ -181,27 +185,3 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
         }
     }
 }
-
-// int main() {
-//     // TODO:
-//     //  improve the graphical display by:
-//     //    consider adding stats, like % cells visited, steps performed, dead ends encountered, etc
-//     //  make a proximity based recursive solver once done with this solver
-//     srand(time(NULL));
-//     indicesChecked.reserve(ROWS * COLS);
-//     gridType grid = utils::generateGrid(ROWS, COLS);
-
-//     rb::recursive_backtracking rb;
-//     // Enable one of the following lines only. One shows the maze-to-be-solved being built, whereas the other builds
-//     it
-//     // but doesn't show it
-//     rb.generateMazeInstantlyNoDisplay(&grid);
-//     // rb.displayMazeBuildSteps(&grid);
-
-//     // these should be 0 indexed
-//     utils::XY start = {0, 0};
-//     utils::XY end = {ROWS - 1, COLS - 1};
-//     naiveSolver(grid, start, end);
-
-//     animateSolution(grid);
-// }
