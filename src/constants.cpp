@@ -26,16 +26,19 @@ inline constexpr int FPS_GENERATING = 15;
 inline constexpr int FPS_SOLVING = 3;
 
 // Choose one of the available algorithms to generate the maze
-enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SKIP_GENERATION };
-const generatorAlgorithm currentGenerator = RECURSIVE_BACKTRACKING;
+enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SILENTLY_GENERATE };
+const generatorAlgorithm currentGenerator = SILENTLY_GENERATE;
 
 // Choose one of the available algorithms to solve the maze
-enum solverAlgorithm { NAIVE_RECURSIVE, SKIP_SOLVING };
-const solverAlgorithm currentSolver = NAIVE_RECURSIVE;
+enum solverAlgorithm { NAIVE_RECURSIVE, WEIGHTED_RECURSIVE, SKIP_SOLVING };
+const solverAlgorithm currentSolver = WEIGHTED_RECURSIVE;
 
 // Set the start and end points for the solving algorithm. These values should be 0 indexed
 const utils::XY solverStart = {0, 0};
 const utils::XY solverEnd = {ROWS - 1, COLS - 1};
+
+// Whether to display the scores of the cells in the maze
+const bool displayScores = true;
 
 //------------------------------------------------------------------------------
 // Algorithm related constants

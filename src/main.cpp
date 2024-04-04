@@ -13,6 +13,7 @@ How to use:
 #include "constants.cpp"
 #include "generators/recursive_backtracking.h"
 #include "solvers/naive_recursive_solver.h"
+#include "solvers/weighted_proximity_recursive.h"
 #include "utils.h"
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -33,7 +34,7 @@ int main() {
             break;
         }
 
-        case SKIP_GENERATION:
+        case SILENTLY_GENERATE:
             rb::generateMazeInstantlyNoDisplay(&grid);
             break;
 
@@ -43,8 +44,13 @@ int main() {
 
     switch (currentSolver) {
         case NAIVE_RECURSIVE:
-            ns::solve(grid, solverStart, solverEnd);
+            InitWindow(dims.x, dims.y, "Naive Recursive Solver");
             ns::animateSolution(grid);
+            break;
+
+        case WEIGHTED_RECURSIVE:
+            InitWindow(dims.x, dims.y, "Proximity Weighted Recursive Solver");
+            ws::animateSolution(grid);
             break;
 
         case SKIP_SOLVING:

@@ -53,7 +53,7 @@ endif
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
 # OBJ=bin/recursive_backtracking.o
-DEPS_MAIN= $(SRC_PATH)/generators/recursive_backtracking.cpp $(SRC_PATH)/utils.cpp $(SRC_PATH)/solvers/naive_recursive_solver.cpp
+DEPS_MAIN= $(SRC_PATH)/generators/recursive_backtracking.cpp $(SRC_PATH)/utils.cpp $(SRC_PATH)/solvers/naive_recursive_solver.cpp $(SRC_PATH)/solvers/weighted_proximity_recursive.cpp
 
 # recursive_generator: $(SRC_PATH)/generators/recursive_backtracking.cpp
 	# $(CC) -o bin/$@ $^ $(CFLAGS)
