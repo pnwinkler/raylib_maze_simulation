@@ -29,12 +29,12 @@ int main() {
         case RECURSIVE_BACKTRACKING: {
             // TODO: get WASM display working. The desktop version is now fine.
             InitWindow(dims.x, dims.y, "Maze Generator");
-            RB::_nonWasmFuncToDisplayMazeBuildSteps(&grid);
+            rb::_nonWasmFuncToDisplayMazeBuildSteps(&grid);
             break;
         }
 
         case SKIP_GENERATION:
-            RB::generateMazeInstantlyNoDisplay(&grid);
+            rb::generateMazeInstantlyNoDisplay(&grid);
             break;
 
         default:

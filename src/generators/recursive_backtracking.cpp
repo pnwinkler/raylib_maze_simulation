@@ -35,13 +35,13 @@ struct mostRecentGridEdit {
 };
 struct mostRecentGridEdit mrge;
 
-void RB::simulationTick(utils::gridType* grid) {
+void rb::simulationTick(utils::gridType* grid) {
     // Progress the state of the maze generation by one tick.
 
     if (_firstSimulationTick) {
         _firstSimulationTick = false;
         XY start = {0, 0};
-        RB::_carvePassagesFrom(start, grid);
+        rb::_carvePassagesFrom(start, grid);
         return;
     }
 
@@ -59,24 +59,24 @@ void RB::simulationTick(utils::gridType* grid) {
     }
 }
 
-void RB::_wasmFuncToDisplayMazeBuildSteps(void* arg) {
+void rb::_wasmFuncToDisplayMazeBuildSteps(void* arg) {
     gridType* grid_ptr = static_cast<gridType*>(arg);
 
     BeginDrawing();
-    RB::_simulationDraw(grid_ptr);
-    RB::simulationTick(grid_ptr);
+    rb::_simulationDraw(grid_ptr);
+    rb::simulationTick(grid_ptr);
     EndDrawing();
     if (taskDeque.empty()) {
         // repeat one last time, to ensure the final state (e.g. task count) is displayed, then stop
         BeginDrawing();
         _simulationComplete = true;
-        RB::simulationTick(grid_ptr);
-        RB::_simulationDraw(grid_ptr);
+        rb::simulationTick(grid_ptr);
+        rb::_simulationDraw(grid_ptr);
         EndDrawing();
     }
 }
 
-void RB::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
+void rb::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
     // We need to take void* as an argument, so that our WASM and non-WASM funcs can have the same signature
     // And we need void* because that's what emscripten's set main loop function expects
     gridType* grid_ptr = static_cast<gridType*>(arg);
@@ -85,21 +85,21 @@ void RB::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
     while (!WindowShouldClose())  // Detect window close button or ESC key
     {
         BeginDrawing();
-        RB::_simulationDraw(grid_ptr);
-        RB::simulationTick(grid_ptr);
+        rb::_simulationDraw(grid_ptr);
+        rb::simulationTick(grid_ptr);
         EndDrawing();
     }
     CloseWindow();
 }
 
-void RB::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
+void rb::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
     // Generates the maze instantly, with no animation
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
 }
 
-void RB::_simulationDraw(utils::gridType* grid) {
+void rb::_simulationDraw(utils::gridType* grid) {
     // Helps draw grid state in GUI. Expects an existing window.
 
     ClearBackground(RAYWHITE);
@@ -125,7 +125,7 @@ void RB::_simulationDraw(utils::gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
-bool RB::_carvePassagesFrom(const XY& start, gridType* grid) {
+bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
     // Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
     // false.
 
@@ -150,7 +150,7 @@ bool RB::_carvePassagesFrom(const XY& start, gridType* grid) {
     return false;
 }
 
-bool RB::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
+bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
     // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
     // false.
 
@@ -174,7 +174,7 @@ bool RB::_carvingHelper(const XY& start, const XY& target, const int direction, 
         mrge.y1 = target.y;
     }
 
-    RB::_carvePassagesFrom(target, grid);
+    rb::_carvePassagesFrom(target, grid);
 
     std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
     taskDeque.push_front(std::move(task));
