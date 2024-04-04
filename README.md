@@ -24,13 +24,8 @@ Therefore, this project's code style and logical structure should not necessaril
 - run the executable from bin, e.g. `./bin/solver`
 
 # How to build for web using WASM
-- Clone
-- cd into folder
-- configure params in constants.cpp
-- run this command: `make PLATFORM=PLATFORM_WEB`
-- run this command: `python -m http.server 8000`
-- open in your browser the html file, like this `http://localhost:8000/path/to/game.html`. Provide the full path to the html file, minus the home/username bit, and make sure the port matches that used by the python command above.
 
+WASM is currently not supported. Supporting it was causing too many headaches. I may support it again in future. 
 
 ## Useful resources 
 Some of these docs are slightly out of date, but they should convey the gist of how WASM, Emscripten, and Raylib operate together.
