@@ -52,8 +52,8 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         bool targetInBounds = inBounds(grid, neighbor);
         bool indexChecked = indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
         // Either our cell points to that cell or that cell points to our cell
-        bool noWallBetween = targetInBounds && (grid[currentLocation.y][currentLocation.x] == direction ||
-                                                grid[neighbor.y][neighbor.x] == OPPOSITE[direction]);
+        bool noWallBetween = targetInBounds && ((grid[currentLocation.y][currentLocation.x] & direction != 0) ||
+                                                (grid[neighbor.y][neighbor.x] & OPPOSITE[direction] != 0));
 
         if (!indexChecked && noWallBetween) {
             locationsToCheck.push_back(neighbor);
@@ -135,9 +135,9 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
 
             // Draw the walls
             int val = grid.at(y).at(x);
-            if (val != SOUTH && !(y < grid.size() - 1 && grid.at(y + DY[SOUTH])[x] == NORTH))
+            if ((val & SOUTH == 0) && !(y < grid.size() - 1 && grid.at(y + DY[SOUTH])[x] & NORTH != 0))
                 DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
-            if (val != EAST && !(x < grid.at(0).size() - 1 && grid.at(y)[x + DX[EAST]] == WEST))
+            if ((val & EAST == 0) && !(x < grid.at(0).size() - 1 && grid.at(y)[x + DX[EAST]] & WEST != 0))
                 DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
         }
     }
