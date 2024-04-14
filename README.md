@@ -21,7 +21,7 @@ Therefore, this project's code style and logical structure should not necessaril
 - cd into folder
 - configure params in constants.cpp
 - run this command: `make PLATFORM=PLATFORM_DESKTOP`
-- run the executable from bin, e.g. `./bin/solver`
+- run the executable from bin, e.g. `./bin/main`
 
 # How to build for web using WASM
 

@@ -26,8 +26,8 @@ inline constexpr int FPS_GENERATING = 15;
 inline constexpr int FPS_SOLVING = 3;
 
 // Choose one of the available algorithms to generate the maze
-enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SILENTLY_GENERATE };
-const generatorAlgorithm currentGenerator = SILENTLY_GENERATE;
+enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SILENTLY_GENERATE, ELLERS };
+const generatorAlgorithm currentGenerator = ELLERS;
 
 // Choose one of the available algorithms to solve the maze
 enum solverAlgorithm { NAIVE_RECURSIVE, WEIGHTED_RECURSIVE, SKIP_SOLVING };
@@ -41,7 +41,7 @@ const utils::XY solverEnd = {ROWS - 1, COLS - 1};
 const bool displayScores = true;
 
 //------------------------------------------------------------------------------
-// Algorithm related constants
+// Algorithm related constants. Don't edit these.
 //------------------------------------------------------------------------------
 inline constexpr int NORTH = 1, SOUTH = 2, EAST = 4, WEST = 8;
 
