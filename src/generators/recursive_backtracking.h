@@ -1,7 +1,6 @@
 #ifndef RECURSIVE_BACKTRACKING_H
 #define RECURSIVE_BACKTRACKING_H
 
-#include <functional>  // for std::bind, and std::function
 #include "../utils.h"
 using namespace utils;
 
