@@ -9,7 +9,7 @@ namespace utils {
 
 typedef std::vector<std::vector<int>> gridType;
 
-gridType generateGrid(const int rows, const int cols) {
+gridType createEmptyGrid(const int rows, const int cols) {
     gridType grid;
     for (int y = 0; y < rows; y++) {
         std::vector<int> newRow;

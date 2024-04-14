@@ -21,7 +21,7 @@ Color gradateColor(Color start, Color target, int idx, int maxIdx);
 bool inBounds(gridType& grid, const XY& location);
 bool inBounds(gridType& grid, const int x, const int y);
 canvasDims calculateCanvasDimensions();
-gridType generateGrid(const int rows, const int cols);
+gridType createEmptyGrid(const int rows, const int cols);
 void displayMazeInConsole(gridType& grid);
 
 }  // namespace utils
