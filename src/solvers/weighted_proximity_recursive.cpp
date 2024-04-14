@@ -167,7 +167,6 @@ void ws::solve(gridType& grid, XY startLoc, XY endLoc) {
 
     int nrCells = grid.size() * grid.at(0).size();
     while (!found || (indicesChecked.size() >= nrCells) && remainingScores->size() > 0) {
-        // std::cout << "DEBUG 1: remainingScores->size() " << remainingScores->size() << '\n';
         found = nextStep(grid, endLoc);
     }
 
