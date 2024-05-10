@@ -3,6 +3,7 @@ This code generates a maze graphically (displayed using Raylib), and solves it.
 
 # Maze-generating algorithms implemented:
 - Recursive backtracking
+- Ellers (algorithm complete, display functionality is WIP)
 
 # Maze-solving algorithms implemented:
 - Naive recursive algorithm
