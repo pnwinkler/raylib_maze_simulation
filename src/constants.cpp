@@ -27,7 +27,7 @@ inline constexpr int FPS_SOLVING = 3;
 
 // Choose one of the available algorithms to generate the maze
 enum generatorAlgorithm { RECURSIVE_BACKTRACKING, SILENTLY_GENERATE, ELLERS };
-const generatorAlgorithm currentGenerator = ELLERS;
+const generatorAlgorithm currentGenerator = RECURSIVE_BACKTRACKING;
 
 // Choose one of the available algorithms to solve the maze
 enum solverAlgorithm { NAIVE_RECURSIVE, WEIGHTED_RECURSIVE, SKIP_SOLVING };

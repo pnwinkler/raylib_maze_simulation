@@ -52,21 +52,21 @@ int main() {
             throw std::invalid_argument("The chosen generator algorithm is not yet implemented");
     };
 
-    // switch (currentSolver) {
-    //     case NAIVE_RECURSIVE:
-    //         InitWindow(dims.x, dims.y, "Naive Recursive Solver");
-    //         ns::animateSolution(grid);
-    //         break;
+    switch (currentSolver) {
+        case NAIVE_RECURSIVE:
+            InitWindow(dims.x, dims.y, "Naive Recursive Solver");
+            ns::animateSolution(grid);
+            break;
 
-    //     case WEIGHTED_RECURSIVE:
-    //         InitWindow(dims.x, dims.y, "Proximity Weighted Recursive Solver");
-    //         ws::animateSolution(grid);
-    //         break;
+        case WEIGHTED_RECURSIVE:
+            InitWindow(dims.x, dims.y, "Proximity Weighted Recursive Solver");
+            ws::animateSolution(grid);
+            break;
 
-    //     case SKIP_SOLVING:
-    //         break;
+        case SKIP_SOLVING:
+            break;
 
-    //     default:
-    //         throw std::invalid_argument("The chosen solver algorithm is not yet implemented");
-    // }
+        default:
+            throw std::invalid_argument("The chosen solver algorithm is not yet implemented");
+    }
 }
