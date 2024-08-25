@@ -106,11 +106,13 @@ void rb::_simulationDraw(utils::gridType* grid) {
         for (int x = 0; x < grid->at(0).size(); x++) {
             int val = grid->at(y).at(x);
 
+            // Draw the walls between cells
             if (val != SOUTH && !(y < grid->size() - 1 && grid->at(y + DY[SOUTH])[x] == NORTH))
                 DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
             if (val != EAST && !(x < grid->at(0).size() - 1 && grid->at(y)[x + DX[EAST]] == WEST))
                 DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
 
+            // Draw rectangles to help the user identify the most recent cells to have changed
             if (mrge.x0 == x && mrge.y0 == y)
                 DrawRectangle(mrge.x0 * CELLWIDTH, mrge.y0 * CELLHEIGHT, CELLWIDTH, CELLHEIGHT, PINK);
             if (mrge.x1 == x && mrge.y1 == y)

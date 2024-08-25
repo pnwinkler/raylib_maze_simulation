@@ -24,21 +24,25 @@
 using namespace constants;
 using namespace utils;
 
-static std::unordered_set<int> indicesChecked = {};
-static std::deque<utils::XY> locationsInOrderVisited = {};
+// Store the indices of all cells that we have examined.
+static std::unordered_set<int> g_indicesChecked = {};
 
+// Store the details of each cell visited, in the order they were visited.
+static std::deque<utils::XY> g_locationsInOrderVisited = {};
+
+// Perform the next step of the algorithm. Return true if target was found, else false.
+// Effectively, for every location to check, we check if it can connect to a neighboring cell.
+// If it can, then we add that cell to the list of locations to check.
 bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
-    // Perform the next step of the algorithm. Return true if target was found, else false.
-
     XY currentLocation = locationsToCheck.front();
     locationsToCheck.pop_front();
-    locationsInOrderVisited.push_back(currentLocation);
-    indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
+    g_locationsInOrderVisited.push_back(currentLocation);
+    g_indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
 
-    assert(utils::inBounds(grid, currentLocation));
+    assert(inBounds(grid, currentLocation));
 
-    if (currentLocation.y == target.y && currentLocation.x == target.x) {
-        std::cout << "FOUND at " << currentLocation.x << ',' << currentLocation.y << '\n';
+    if (currentLocation == target) {
+        std::cout << "FOUND target at " << currentLocation.x << ',' << currentLocation.y << '\n';
         return true;
     }
 
@@ -50,10 +54,10 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     for (const auto& direction : directions) {
         XY neighbor = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
         bool targetInBounds = inBounds(grid, neighbor);
-        bool indexChecked = indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
-        // Either our cell points to that cell or that cell points to our cell
+        // Either our cell points to that cell or that cell points to our cell, or both
         bool noWallBetween = targetInBounds && ((grid[currentLocation.y][currentLocation.x] & direction != 0) ||
                                                 (grid[neighbor.y][neighbor.x] & OPPOSITE[direction] != 0));
+        bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
 
         if (!indexChecked && noWallBetween) {
             locationsToCheck.push_back(neighbor);
@@ -63,22 +67,20 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     return false;
 }
 
+// Given a valid maze, find a path within that maze, connecting the start and end locations,
+// while respecting maze walls.
 void ns::solve(gridType& grid, XY startLoc, XY endLoc) {
-    // Given a valid maze, find a path within that maze, connecting the start and end locations,
-    // while respecting maze walls.
     if (!inBounds(grid, startLoc))
         throw std::invalid_argument("Start location out of grid bounds");
     if (!inBounds(grid, endLoc))
         throw std::invalid_argument("End location out of grid bounds");
 
-    indicesChecked.reserve(ROWS * COLS);
-    std::deque<XY> locationsToCheck = {};
+    g_indicesChecked.reserve(ROWS * COLS);
 
+    // Repeatedly execute the next step of the algorithm, until we find the target cell.
     bool found = false;
-    locationsToCheck.push_front(startLoc);
-    indicesChecked.insert(startLoc.y * grid.size() + startLoc.x);
-
-    while (!found && (indicesChecked.size() < grid.size() * grid.at(0).size()) && locationsToCheck.size() > 0) {
+    std::deque<XY> locationsToCheck = {startLoc};
+    while (!found && (g_indicesChecked.size() < grid.size() * grid.at(0).size()) && locationsToCheck.size() > 0) {
         found = ns::nextStep(grid, endLoc, locationsToCheck);
     }
 
@@ -88,8 +90,10 @@ void ns::solve(gridType& grid, XY startLoc, XY endLoc) {
     }
 }
 
+// Animate the solution to the maze. If the maze has not yet been solved, then this function
+// solves it immediately.
 void ns::animateSolution(gridType& grid) {
-    if (locationsInOrderVisited.size() == 0) {
+    if (g_locationsInOrderVisited.size() == 0) {
         // No attempt has yet been made to solve the maze
         ns::solve(grid, solverStart, solverEnd);
     }
@@ -98,47 +102,59 @@ void ns::animateSolution(gridType& grid) {
     SetTargetFPS(FPS_SOLVING);
     while (!WindowShouldClose()) {
         BeginDrawing();
-        if (locationIndex < locationsInOrderVisited.size()) {
+        if (locationIndex < g_locationsInOrderVisited.size()) {
             ns::_solverDraw(grid, locationIndex);
             locationIndex++;
         }
         EndDrawing();
-        // std::this_thread::sleep_for(std::chrono::milliseconds(1000 / FPS_SOLVING));
     }
     CloseWindow();
 }
 
+// This helper function draws the grid's state in GUI. It expects an existing window.
 void ns::_solverDraw(gridType& grid, int locationIdx) {
-    // Helper function, to draw grid state in GUI. Expects an existing window.
-
     ClearBackground(RAYWHITE);
 
-    auto checkedLocation = locationsInOrderVisited.at(locationIdx);
+    // This is the location being evaluated by the algorithm at this particular stage.
+    auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
+
+    // This is the maze exit.
+    auto mazeEndpoint = g_locationsInOrderVisited.back();
 
     for (int y = 0; y < grid.size(); y++) {
         for (int x = 0; x < grid.at(0).size(); x++) {
+            // Draw the maze exit.
             // The offsets are intended to stop this shape from being drawn over the walls of the maze
-            auto mazeEndpoint = locationsInOrderVisited.back();
             DrawRectangle(mazeEndpoint.x * CELLWIDTH, mazeEndpoint.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
-                          LIGHTGRAY);
+                          mazeEndpointColor);
+
+            // Draw the location currently being checked.
             DrawRectangle(checkedLocation.x * CELLWIDTH, checkedLocation.y * CELLHEIGHT + 1, CELLWIDTH - 1,
-                          CELLHEIGHT - 1, PURPLE);
+                          CELLHEIGHT - 1, cellFocusColor);
 
             // Add indication of previously visited cells
             for (int i = 0; i < locationIdx; i++) {
-                Color clr = utils::gradateColor(PURPLE, RAYWHITE, i, locationIdx);
-                auto visitedLoc = locationsInOrderVisited.at(i);
+                Color clr = utils::gradateColor(cellFocusColor, RAYWHITE, i, locationIdx);
+                auto visitedLoc = g_locationsInOrderVisited.at(i);
                 DrawRectangle(visitedLoc.x * CELLWIDTH, visitedLoc.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
                               clr);
             }
+
+            // Draw title
             DrawText("Solver", 5, 5, 6, RED);
 
-            // Draw the walls
-            int val = grid.at(y).at(x);
-            if ((val & SOUTH == 0) && !(y < grid.size() - 1 && grid.at(y + DY[SOUTH])[x] & NORTH != 0))
-                DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
-            if ((val & EAST == 0) && !(x < grid.at(0).size() - 1 && grid.at(y)[x + DX[EAST]] & WEST != 0))
-                DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
+            // Draw the walls between cells
+            int cell_val = grid.at(y).at(x);
+            bool origin_points_east = cell_val & EAST != 0;
+            bool origin_points_south = cell_val & SOUTH != 0;
+            bool neighbor_points_west = x + DX[EAST] < grid.at(0).size() && grid.at(y)[x + DX[EAST]] & WEST != 0;
+            bool neighbor_points_north = y + DY[SOUTH] < grid.size() && grid.at(y + DY[SOUTH])[x] & NORTH != 0;
+            if (!origin_points_east && !neighbor_points_west) {
+                DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, wallColor);
+            }
+            if (!origin_points_south && !neighbor_points_north) {
+                DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, wallColor);
+            }
         }
     }
 }

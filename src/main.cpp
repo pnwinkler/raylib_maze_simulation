@@ -25,9 +25,16 @@ using namespace constants;
 
 int main() {
     srand(time(NULL));
+    // Create an empty data structure to hold the future maze
     gridType grid = createEmptyGrid(ROWS, COLS);
     auto dims = utils::calculateCanvasDimensions();
 
+    // Populate the empty data structure, to turn it into a maze. Effectively, this replaces
+    // the 0's in the data structure with other numbers. Those numbers indicate which sides 
+    // of the cell in that location are unblocked by walls (and are therefore valid connections).
+    // For example a value equalling NORTH+SOUTH (refer to the file containing algorithm constants),
+    // indicates that only the cells to the north and south of the current cell are unblocked 
+    // by walls. They are therefore valid connections for the current cell. 
     switch (currentGenerator) {
         case RECURSIVE_BACKTRACKING: {
             // TODO: get WASM display working. The desktop version is now fine.
@@ -36,7 +43,7 @@ int main() {
             break;
         }
         case ELLERS:
-            el::generateMazeInstantlyNoDisplay();
+            // el::generateMazeInstantlyNoDisplay();
             grid = el::exportCardinalMaze();
             // TODO: WIP replace these lines. At the moment, we use them to print the final state of the maze
             InitWindow(dims.x, dims.y, "Maze Generator: Eller's algorithm");

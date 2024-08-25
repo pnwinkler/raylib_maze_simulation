@@ -31,7 +31,7 @@ const generatorAlgorithm currentGenerator = RECURSIVE_BACKTRACKING;
 
 // Choose one of the available algorithms to solve the maze
 enum solverAlgorithm { NAIVE_RECURSIVE, WEIGHTED_RECURSIVE, SKIP_SOLVING };
-const solverAlgorithm currentSolver = WEIGHTED_RECURSIVE;
+const solverAlgorithm currentSolver = NAIVE_RECURSIVE;
 
 // Set the start and end points for the solving algorithm. These values should be 0 indexed
 const utils::XY solverStart = {0, 0};
@@ -39,6 +39,13 @@ const utils::XY solverEnd = {ROWS - 1, COLS - 1};
 
 // Whether to display the scores of the cells in the maze
 const bool displayScores = true;
+
+// The color to use for the endpoint of the maze
+const Color mazeEndpointColor = LIGHTGRAY;
+// The color to use for the location in the maze currently being examined
+const Color cellFocusColor = PURPLE;
+// The color to use for the maze walls
+const Color wallColor = BLACK;
 
 //------------------------------------------------------------------------------
 // Algorithm related constants. Don't edit these.

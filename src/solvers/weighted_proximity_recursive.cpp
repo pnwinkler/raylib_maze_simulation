@@ -1,7 +1,9 @@
 // Given a grid, find a contiguous line between the defined start point and end point.
-// This algorothm uses a weighted proximity approach, where the next cell to visit is the one with the lowest weight
-// (calculated as the sum of the absolute differences between the cell and the target cell). The algorithm is recursive,
-// and will continue to visit cells until the target is found, or all cells have been visited.
+// This algorothm uses a weighted proximity approach, where the next cell to visit is determined based
+// on its distance from the target (calculated as the sum of the absolute differences between the cell
+// and the target cell).
+// This algorithm is recursive, and will continue to visit cells until the target is found,
+// or all cells have been visited.
 
 #include "weighted_proximity_recursive.h"
 #include <algorithm>
@@ -13,6 +15,7 @@
 #include "../constants.cpp"
 #include "../utils.h"
 #include "deque"
+#include "map"
 #include "unordered_set"
 #include "vector"
 
@@ -23,19 +26,12 @@
 
 using namespace constants;
 
-struct scoreGroup {
-    int score;
-    std::vector<XY> cells = {};
-};
-typedef std::vector<scoreGroup> sortedScores;
-// Cells and scores for all cells that have not yet been visited. Sorted in ascending order of score.
-static std::shared_ptr<sortedScores> remainingScores = std::make_shared<sortedScores>();
-
-static std::unordered_set<int> indicesChecked = {};
-static std::deque<XY> locationsInOrderVisited = {};
+static std::unordered_set<int> g_indicesChecked = {};
+static std::deque<XY> g_locationsInOrderVisited = {};
 static const Color SCORE_COLOR = {170, 61, 155, 155};
 
-int ws::calculateWeight(XY cell, XY mazeFinish) {
+// Calculate the score for a given cell
+int ws::calculateScore(const XY& cell, const XY& mazeFinish) {
     int diffX = mazeFinish.x - cell.x;
     int diffY = mazeFinish.y - cell.y;
     if (diffX < 0) {
@@ -47,84 +43,67 @@ int ws::calculateWeight(XY cell, XY mazeFinish) {
     return diffX + diffY;
 }
 
-void ws::insertIntoScores(XY cell, int score) {
-    // Insert the cell into the remainingScores vector, in the correct position, based on the score. If the cell is
-    // already in the remainingScores vector, then do nothing.
-
-    for (int x = remainingScores->size() - 1; x > -1; x--) {
-        if (score < remainingScores->at(x).score) {
-            continue;
-        }
-
-        else if (score == remainingScores->at(x).score) {
-            // Score group already exists. Add the cell to it, if it's not already there.
-            std::cout << "DEBUG: score group for cell (" << cell.x << ',' << cell.y << ") already exists\n";
-            for (const auto& existingCell : remainingScores->at(x).cells) {
-                if (existingCell.y == cell.y && existingCell.x == cell.x) {
-                    std::cout << "DEBUG: cell (" << cell.x << ',' << cell.y << ") already exists in score group as ("
-                              << existingCell.x << ',' << existingCell.y << ")\n";
-                    return;
-                }
-                std::cout << "Adding (" << cell.x << ',' << cell.y << ") to remainingScores[" << x << "]\n";
-                remainingScores->at(x).cells.push_back(cell);
-            }
-            return;
-        }
-
-        else if (score > remainingScores->at(x).score) {
-            // New score exceeds all remaining scores. Insert it after this element.
-            std::cout << "DEBUG: adding cell (" << cell.x << ',' << cell.y << ") to new score group\n";
-            scoreGroup sg = {score, {cell}};
-            remainingScores->insert(remainingScores->begin() + x + 1, sg);
-            return;
-        }
+// From the remaining scores, pop any one of the best scoring elements
+XY ws::popBestScorer(ws::tScores& remainingScores) {
+    auto lowest = remainingScores.begin();
+    auto key = lowest->first;
+    auto& vals = lowest->second;
+    XY origin = *vals.begin();
+    vals.erase(vals.begin());
+    if (vals.empty()) {
+        remainingScores.erase(key);
     }
-
-    // remainingScores either has 0 elements, or score is less than the lowest score element.
-    std::cout << "DEBUG: Adding (" << cell.x << ',' << cell.y << ") to new score group\n";
-    std::vector<XY> cells = {cell};
-    scoreGroup sg = {score, cells};
-    remainingScores->insert(remainingScores->begin(), sg);
-    return;
+    return origin;
 }
 
-void printRemainingScores() {
-    for (int i = 0; i < remainingScores->size(); i++) {
-        std::cout << "Score=" << remainingScores->at(i).score << " for cells: ";
-        for (int j = 0; j < remainingScores->at(i).cells.size(); j++) {
-            std::cout << '(' << remainingScores->at(i).cells.at(j).x << ',' << remainingScores->at(i).cells.at(j).y
-                      << ')';
+// Insert the cell into the remainingScores vector, in the correct position, based on the score. If the cell is
+// already in the remainingScores vector, then do nothing.
+void ws::insertIntoScores(const XY& cell, const int score, ws::tScores& remainingScores) {
+    if (remainingScores.find(score) != remainingScores.end()) {
+        // append the cell into the remaining scores data
+        std::cout << "DEBUG: score group for cell (" << cell.x << ',' << cell.y << ") already exists\n";
+        // std::cout << "Adding (" << cell.x << ',' << cell.y << ") to remainingScores[" << x << "]\n";
+        remainingScores[score].insert(cell);
+    } else {
+        // add a new group
+        std::cout << "DEBUG: adding cell (" << cell.x << ',' << cell.y << ") to new score group\n";
+        remainingScores[score] = {cell};
+    }
+}
+
+void printRemainingScores(const ws::tScores& remainingScores) {
+    for (const auto& pair : remainingScores) {
+        std::cout << "Score=" << pair.first << " for cells: ";
+        for (const auto& cell : pair.second) {
+            std::cout << "(x=" << cell.x << ",y=" << cell.y << ')' << ' ';
         }
         std::cout << '\n';
     }
 }
 
-bool ws::nextStep(gridType& grid, XY target) {
-    // Perform the next step of the algorithm. Return true if target was found, else false
-    // pop any one of the elements with the greatest weight
+// Perform the next step of the algorithm. Return True if the maze is solved, else False.
+bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
+    // TODO: make this function idempotent (atm, we return True only once)
+    // Basically, we pop any cell with the best score, and check if its location equals that
+    // of our target cell. If it does, then return True (we've solved the maze).
+    // Else false. Then add all unchecked neighbors to the list of cells to check.
 
-    if (remainingScores->empty()) {
+    if (remainingScores.size() == 0) {
         throw std::runtime_error("Error: remainingScores expected to have at least one element");
     }
 
-    // Pop any of the lowest score elements
-    XY origin = remainingScores->at(0).cells.at(0);
-    printRemainingScores();
+    // Select our origin cell, based on score
+    XY origin = popBestScorer(remainingScores);
+    printRemainingScores(remainingScores);
     std::cout << "DEBUG: origin=(" << origin.x << ',' << origin.y << ")\n";
-    std::cout << '\n';
-    remainingScores->at(0).cells.erase(remainingScores->at(0).cells.begin());
 
-    if (remainingScores->at(0).cells.empty()) {
-        remainingScores->erase(remainingScores->begin());
-    }
-
-    if (indicesChecked.contains((origin.y * grid.size()) + origin.x)) {
+    if (g_indicesChecked.contains((origin.y * grid.size()) + origin.x)) {
         return false;
     }
 
     assert(inBounds(grid, origin));
-    locationsInOrderVisited.push_back(origin);
-    indicesChecked.insert((origin.y * grid.size()) + origin.x);
+    g_locationsInOrderVisited.push_back(origin);
+    g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
 
     if (origin.y == target.y && origin.x == target.x) {
         std::cout << "FOUND at " << origin.x << ',' << origin.y << '\n';
@@ -138,48 +117,47 @@ bool ws::nextStep(gridType& grid, XY target) {
 
     for (const auto& direction : directions) {
         XY neighbor = {origin.x + DX[direction], origin.y + DY[direction]};
-        bool targetInBounds = inBounds(grid, neighbor);
-        bool indexChecked = indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
-        // Either our cell points to that cell or that cell points to our cell
-        bool noWallBetween = targetInBounds && (grid[origin.y][origin.x] == direction ||
-                                                grid[neighbor.y][neighbor.x] == OPPOSITE[direction]);
+        if (!inBounds(grid, neighbor)) {
+            continue;
+        };
+        bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
+        // Check if both cells points to each other
+        bool originPointsInDirection = grid[origin.y][origin.x] & direction != 0;
+        bool neighborPointsInOppositeDirection = grid[neighbor.y][neighbor.x] & OPPOSITE[direction] != 0;
+        bool noWallBetween = originPointsInDirection && neighborPointsInOppositeDirection;
 
         if (!indexChecked && noWallBetween) {
-            int weight = calculateWeight(neighbor, target);
-            insertIntoScores(neighbor, weight);
+            // Neighbor is a potentially valid match
+            int score = calculateScore(neighbor, target);
+            insertIntoScores(neighbor, score, remainingScores);
         }
     }
 
     return false;
 }
 
-void ws::solve(gridType& grid, XY startLoc, XY endLoc) {
-    // Given a valid maze, find a path within that maze, connecting the start and end locations,
-    // while respecting maze walls.
+// Given a valid maze, find a path within that maze, connecting the start and end locations,
+// while respecting maze walls.
+void ws::solve(gridType& grid, const XY& startLoc, const XY& endLoc) {
     if (!inBounds(grid, startLoc))
         throw std::invalid_argument("Start location out of grid bounds");
     if (!inBounds(grid, endLoc))
         throw std::invalid_argument("End location out of grid bounds");
 
+    tScores remainingScores = {};
+
+    g_indicesChecked.reserve(ROWS * COLS);
+    int score = calculateScore(startLoc, endLoc);
+    insertIntoScores(startLoc, score, remainingScores);
+
     bool found = false;
-    int weight = calculateWeight(startLoc, endLoc);
-    insertIntoScores(startLoc, weight);
-
-    int nrCells = grid.size() * grid.at(0).size();
-    while (!found || (indicesChecked.size() >= nrCells) && remainingScores->size() > 0) {
-        found = nextStep(grid, endLoc);
-    }
-
-    if (!found) {
-        std::cout << "DEBUG: found=" << found << " indicesCheckedSize=" << indicesChecked.size()
-                  << " remainingScores->size()= " << remainingScores->size() << '\n';
-        std::cerr << "Failed to find solution connecting points (" << startLoc.y << "," << startLoc.x << ") and ("
-                  << endLoc.x << "," << endLoc.y << ")" << std::endl;
+    while (!found) {
+        found = nextStep(grid, endLoc, remainingScores);
     }
 }
 
 void ws::animateSolution(gridType& grid) {
-    if (locationsInOrderVisited.size() == 0) {
+    if (g_locationsInOrderVisited.size() == 0) {
         // No attempt has yet been made to solve the maze
         ws::solve(grid, solverStart, solverEnd);
     }
@@ -188,7 +166,7 @@ void ws::animateSolution(gridType& grid) {
     SetTargetFPS(FPS_SOLVING);
     while (!WindowShouldClose()) {
         BeginDrawing();
-        if (locationIndex < locationsInOrderVisited.size()) {
+        if (locationIndex < g_locationsInOrderVisited.size()) {
             _solverDraw(grid, locationIndex);
             locationIndex++;
         }
@@ -197,17 +175,15 @@ void ws::animateSolution(gridType& grid) {
     CloseWindow();
 }
 
-void ws::_solverDraw(gridType& grid, int locationIdx) {
-    // Helper function, to draw grid state in GUI. Expects an existing window.
-
+// Helper function, to draw grid state in GUI. Expects an existing window.
+void ws::_solverDraw(const gridType& grid, const int locationIdx) {
     ClearBackground(RAYWHITE);
-
-    auto checkedLocation = locationsInOrderVisited.at(locationIdx);
+    auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
 
     for (int y = 0; y < grid.size(); y++) {
         for (int x = 0; x < grid.at(0).size(); x++) {
             // The offsets are intended to stop this shape from being drawn over the walls of the maze
-            auto mazeEndpoint = locationsInOrderVisited.back();
+            auto mazeEndpoint = g_locationsInOrderVisited.back();
             DrawRectangle(mazeEndpoint.x * CELLWIDTH, mazeEndpoint.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
                           LIGHTGRAY);
             DrawRectangle(checkedLocation.x * CELLWIDTH, checkedLocation.y * CELLHEIGHT + 1, CELLWIDTH - 1,
@@ -216,7 +192,7 @@ void ws::_solverDraw(gridType& grid, int locationIdx) {
             // Add indication of previously visited cells
             for (int i = 0; i < locationIdx; i++) {
                 Color clr = utils::gradateColor(PURPLE, RAYWHITE, i, locationIdx);
-                auto visitedLoc = locationsInOrderVisited.at(i);
+                auto visitedLoc = g_locationsInOrderVisited.at(i);
                 DrawRectangle(visitedLoc.x * CELLWIDTH, visitedLoc.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
                               clr);
             }
@@ -230,7 +206,7 @@ void ws::_solverDraw(gridType& grid, int locationIdx) {
 
             if (constants::displayScores) {
                 // Add the score to the cell
-                int score = calculateWeight({x, y}, solverEnd);
+                int score = calculateScore({x, y}, solverEnd);
                 DrawText(std::to_string(score).c_str(), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, SCORE_COLOR);
             }
 

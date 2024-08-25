@@ -4,19 +4,24 @@
 #include <deque>
 #include "../../lib/raylib.h"
 #include "../utils.h"
+#include "map"
 #include "unordered_set"
 
 using namespace utils;
 
 namespace ws {
 
-bool nextStep(gridType& grid, XY target);
-int calculateWeight(XY cell, XY mazeFinish);
-void animateSolution(gridType& grid);
-void insertIntoScores(XY cell, int score);
-void solve(gridType& grid, XY startLoc, XY endLoc);
+// Scores (as keys) for cells (as values) for all cells that have not yet been visited.
+typedef std::map<int, std::unordered_set<XY>> tScores;
 
-void _solverDraw(gridType& grid, int locationIdx);
+bool nextStep(gridType& grid, const XY& target, tScores& remainingScores);
+int calculateScore(const XY& cell, const XY& mazeFinish);
+XY popBestScorer(tScores& remainingScores);
+void animateSolution(gridType& grid);
+void insertIntoScores(const XY& cell, const int score, tScores& remainingScores);
+void solve(gridType& grid, const XY& startLoc, const XY& endLoc);
+
+void _solverDraw(const gridType& grid, const int locationIdx);
 }  // namespace ws
 
 #endif /* WEIGHTED_SOLVER_H */
