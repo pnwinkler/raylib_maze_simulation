@@ -6,14 +6,11 @@
 #include "naive_recursive_solver.h"
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <thread>
 #include "../../lib/raylib.h"  // For WASM
 #include "../constants.cpp"
-#include "../generators/recursive_backtracking.h"
 #include "../utils.h"
 #include "deque"
 #include "unordered_set"

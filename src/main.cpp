@@ -7,7 +7,6 @@ How to use:
     - Execute
 */
 #include <ctime>
-#include <memory>
 #include <stdexcept>
 #include "../lib/raylib.h"
 #include "constants.cpp"
