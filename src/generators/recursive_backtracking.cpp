@@ -174,7 +174,7 @@ bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, 
         mrge.y1 = target.y;
     }
 
-    rb::_carvePassagesFrom(target, grid);
+    // rb::_carvePassagesFrom(target, grid);
 
     std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
     taskDeque.push_front(std::move(task));
