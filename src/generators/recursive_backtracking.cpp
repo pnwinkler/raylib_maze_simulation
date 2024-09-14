@@ -144,7 +144,9 @@ bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
             std::packaged_task<bool()> task(std::bind([start, neighbor, direction, grid]() mutable {
                 return _carvingHelper(start, neighbor, direction, grid);
             }));
-            taskDeque.push_front(std::move(task));
+            if (taskDeque.size() < QUEUE_LENGTH_LIMIT) {
+                taskDeque.push_front(std::move(task));
+            }
         }
     }
     return false;
@@ -177,6 +179,8 @@ bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, 
     // rb::_carvePassagesFrom(target, grid);
 
     std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
-    taskDeque.push_front(std::move(task));
+    if (taskDeque.size() < QUEUE_LENGTH_LIMIT) {
+        taskDeque.push_front(std::move(task));
+    }
     return cond;
 }

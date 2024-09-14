@@ -9,17 +9,15 @@
 // Set these constants!
 //------------------------------------------------------------------------------
 
-/*
-    **WARNING**: don't set the ROWS and COLS values very high, and the CELLWIDTH and CELLHEIGHT values very low. Doing
-   so can result in STACK OVERFLOW when executing a recursive algorithm. Your OS should just kill the program, but it's
-   possible that it will CRASH instead. In my case it crashed when there were ~1320 tasks in queue. This current
-   combination should result in < 600 tasks in queue.
-*/
 namespace constants {
 inline constexpr int ROWS = 15;
 inline constexpr int COLS = 15;
 inline constexpr int CELLWIDTH = 40;
 inline constexpr int CELLHEIGHT = 40;
+// How many tasks are allowed to be queued by recursive functions.
+// A STACK OVERFLOW can occur at huge values! In my case it occurred at 1320 tasks in queue.
+// Exceeding this limit may affect simulation behavior, resulting for example in incomplete mazes being generated
+inline constexpr int QUEUE_LENGTH_LIMIT = 500;
 
 // the FPS to use when generating and solving the maze respectively
 inline constexpr int FPS_GENERATING = 15;
