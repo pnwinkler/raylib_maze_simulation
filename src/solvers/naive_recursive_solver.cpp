@@ -52,8 +52,8 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         XY neighbor = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
         bool targetInBounds = inBounds(grid, neighbor);
         // Either our cell points to that cell or that cell points to our cell, or both
-        bool noWallBetween = targetInBounds && ((grid[currentLocation.y][currentLocation.x] & direction != 0) ||
-                                                (grid[neighbor.y][neighbor.x] & OPPOSITE[direction] != 0));
+        bool noWallBetween = targetInBounds && (((grid[currentLocation.y][currentLocation.x] & direction) != 0) ||
+                                                ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0));
         bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
 
         if (!indexChecked && noWallBetween) {
@@ -142,10 +142,10 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
 
             // Draw the walls between cells
             int cell_val = grid.at(y).at(x);
-            bool origin_points_east = cell_val & EAST != 0;
-            bool origin_points_south = cell_val & SOUTH != 0;
-            bool neighbor_points_west = x + DX[EAST] < grid.at(0).size() && grid.at(y)[x + DX[EAST]] & WEST != 0;
-            bool neighbor_points_north = y + DY[SOUTH] < grid.size() && grid.at(y + DY[SOUTH])[x] & NORTH != 0;
+            bool origin_points_east = (cell_val & EAST) != 0;
+            bool origin_points_south = (cell_val & SOUTH) != 0;
+            bool neighbor_points_west = x + DX[EAST] < grid.at(0).size() && (grid.at(y)[x + DX[EAST]] & WEST) != 0;
+            bool neighbor_points_north = y + DY[SOUTH] < grid.size() && (grid.at(y + DY[SOUTH])[x] & NORTH) != 0;
             if (!origin_points_east && !neighbor_points_west) {
                 DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, wallColor);
             }
