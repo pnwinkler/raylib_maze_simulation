@@ -153,10 +153,10 @@ bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
 // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
 // false.
 bool rb::_carvePassagesHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
-    bool cellInBounds = inBounds(*grid, target);
-    bool cellHasNoConnections = grid->at(target.y).at(target.x) == 0;
+    bool targetInBounds = inBounds(*grid, target);
+    bool targetHasNoConnections = grid->at(target.y).at(target.x) == 0;
 
-    if (!(cellInBounds && cellHasNoConnections)) {
+    if (!(targetInBounds && targetHasNoConnections)) {
         return false;
     }
 
