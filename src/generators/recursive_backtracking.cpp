@@ -19,7 +19,7 @@ using namespace utils;
 // Set up requisite data structures and variables to aid with maze creation
 //------------------------------------------------------------------------------
 
-static bool _firstSimulationTick = true;
+bool _firstSimulationTick = true;
 
 // Holds tasks required for simulation, in a queue, to be called later
 std::deque<std::packaged_task<bool()>> taskDeque;
@@ -34,9 +34,9 @@ struct mostRecentGridEdit {
 };
 struct mostRecentGridEdit mrge;
 
+// Progress the state of the maze generation by one tick. If the tick does not effect a visual change,
+// then execute subsequent ticks, until the state of the maze changes as a result.
 void rb::simulationTick(utils::gridType* grid) {
-    // Progress the state of the maze generation by one tick.
-
     if (_firstSimulationTick) {
         _firstSimulationTick = false;
         XY start = {0, 0};
@@ -90,16 +90,15 @@ void rb::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
     CloseWindow();
 }
 
+// Generates the maze instantly, with no animation
 void rb::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
-    // Generates the maze instantly, with no animation
     do {
         simulationTick(grid);
     } while (!taskDeque.empty());
 }
 
+// Helps draw grid state in GUI. Expects an existing window.
 void rb::_simulationDraw(utils::gridType* grid) {
-    // Helps draw grid state in GUI. Expects an existing window.
-
     ClearBackground(RAYWHITE);
     DrawText(("Tasks " + std::to_string(taskDeque.size())).c_str(), 10, 10, 10, MAROON);
     for (int y = 0; y < grid->size(); y++) {
@@ -125,10 +124,9 @@ void rb::_simulationDraw(utils::gridType* grid) {
 // The algorithm itself
 //------------------------------------------------------------------------------
 
+// Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
+// false.
 bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
-    // Connects two cells in the grid, subject to constraints. Returns true if it changed the grid's state, else
-    // false.
-
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
     std::random_device rd;
     std::mt19937 g(rd());
@@ -152,10 +150,9 @@ bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
     return false;
 }
 
+// Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
+// false.
 bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
-    // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
-    // false.
-
     bool targetInBounds = inBounds(*grid, target);
     bool cond = targetInBounds && grid->at(target.y).at(target.x) == 0;
 
@@ -175,8 +172,6 @@ bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, 
         mrge.x1 = target.x;
         mrge.y1 = target.y;
     }
-
-    // rb::_carvePassagesFrom(target, grid);
 
     std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
     if (taskDeque.size() < QUEUE_LENGTH_LIMIT) {
