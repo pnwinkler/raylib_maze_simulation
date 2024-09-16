@@ -9,6 +9,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <vector>
 #include "../../lib/raylib.h"  // For WASM
 #include "../constants.cpp"
 #include "../utils.h"
@@ -27,6 +28,10 @@ static std::unordered_set<int> g_indicesChecked = {};
 // Store the details of each cell visited, in the order they were visited.
 static std::deque<utils::XY> g_locationsInOrderVisited = {};
 
+// The number of tasks queued at the time when the cell at the same index
+// in g_locationsInOrderVisited was visited by the algorithm
+static std::vector<int> g_taskCount = {};
+
 // Perform the next step of the algorithm. Return true if target was found, else false.
 // Effectively, for every location to check, we check if it can connect to a neighboring cell.
 // If it can, then we add that cell to the list of locations to check.
@@ -34,12 +39,14 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     XY currentLocation = locationsToCheck.front();
     locationsToCheck.pop_front();
     g_locationsInOrderVisited.push_back(currentLocation);
+    g_taskCount.push_back(locationsToCheck.size() + 1);
     g_indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
 
     assert(inBounds(grid, currentLocation));
 
     if (currentLocation == target) {
         std::cout << "FOUND target at " << currentLocation.x << ',' << currentLocation.y << '\n';
+        g_taskCount.back() = 0;
         return true;
     }
 
@@ -137,9 +144,6 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
                               clr);
             }
 
-            // Draw title
-            DrawText("Solver", 5, 5, 6, RED);
-
             // Draw the walls between cells
             int cell_val = grid.at(y).at(x);
             bool origin_points_east = (cell_val & EAST) != 0;
@@ -154,4 +158,5 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
             }
         }
     }
+    DrawText(("Tasks " + std::to_string(g_taskCount.at(locationIdx))).c_str(), 10, 10, 10, MAROON);
 }
