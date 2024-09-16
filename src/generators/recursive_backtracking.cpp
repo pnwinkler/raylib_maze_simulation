@@ -140,7 +140,7 @@ bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
             // Queueing tasks lets us more easily control the interval between simulation
             // steps, which makes rendering the state easier
             std::packaged_task<bool()> task(std::bind([start, neighbor, direction, grid]() mutable {
-                return _carvingHelper(start, neighbor, direction, grid);
+                return _carvePassagesHelper(start, neighbor, direction, grid);
             }));
             if (taskDeque.size() < QUEUE_LENGTH_LIMIT) {
                 taskDeque.push_front(std::move(task));
@@ -152,30 +152,32 @@ bool rb::_carvePassagesFrom(const XY& start, gridType* grid) {
 
 // Attempts to connect source and target cells within the grid. Returns true if it changed the grid's state, else
 // false.
-bool rb::_carvingHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
-    bool targetInBounds = inBounds(*grid, target);
-    bool cond = targetInBounds && grid->at(target.y).at(target.x) == 0;
+bool rb::_carvePassagesHelper(const XY& start, const XY& target, const int direction, gridType* grid) {
+    bool cellInBounds = inBounds(*grid, target);
+    bool cellHasNoConnections = grid->at(target.y).at(target.x) == 0;
 
-    if (cond) {
-        mrge.y0 = -1;
-        mrge.x0 = -1;
-        mrge.x1 = -1;
-        mrge.y1 = -1;
-
-        // Don't overwrite existing connections
-        if (grid->at(start.y).at(start.x) == 0) {
-            grid->at(start.y).at(start.x) = direction;
-            mrge.x0 = start.x;
-            mrge.y0 = start.y;
-        }
-        grid->at(target.y).at(target.x) = OPPOSITE[direction];
-        mrge.x1 = target.x;
-        mrge.y1 = target.y;
+    if (!(cellInBounds && cellHasNoConnections)) {
+        return false;
     }
+
+    mrge.y0 = -1;
+    mrge.x0 = -1;
+    mrge.x1 = -1;
+    mrge.y1 = -1;
+
+    // Don't overwrite existing connections
+    if (grid->at(start.y).at(start.x) == 0) {
+        grid->at(start.y).at(start.x) = direction;
+        mrge.x0 = start.x;
+        mrge.y0 = start.y;
+    }
+    grid->at(target.y).at(target.x) = OPPOSITE[direction];
+    mrge.x1 = target.x;
+    mrge.y1 = target.y;
 
     std::packaged_task<bool()> task(std::bind([target, grid]() { return _carvePassagesFrom(target, grid); }));
     if (taskDeque.size() < QUEUE_LENGTH_LIMIT) {
         taskDeque.push_front(std::move(task));
     }
-    return cond;
+    return true;
 }
