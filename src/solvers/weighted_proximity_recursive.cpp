@@ -22,7 +22,6 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
-#include <memory>
 
 using namespace constants;
 
@@ -121,12 +120,15 @@ bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
             continue;
         };
         bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
-        // Check if both cells points to each other
-        bool originPointsInDirection = grid[origin.y][origin.x] & direction != 0;
-        bool neighborPointsInOppositeDirection = grid[neighbor.y][neighbor.x] & OPPOSITE[direction] != 0;
-        bool noWallBetween = originPointsInDirection && neighborPointsInOppositeDirection;
+        if (indexChecked) {
+            continue;
+        }
 
-        if (!indexChecked && noWallBetween) {
+        // Either our cell points to that cell or that cell points to our cell, or both
+        bool noWallBetween = (((grid[origin.y][origin.x] & direction) != 0) ||
+                              ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0));
+
+        if (noWallBetween) {
             // Neighbor is a potentially valid match
             int score = calculateScore(neighbor, target);
             insertIntoScores(neighbor, score, remainingScores);
