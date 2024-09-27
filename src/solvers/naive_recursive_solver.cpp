@@ -36,16 +36,16 @@ static std::vector<int> g_taskCount = {};
 // Effectively, for every location to check, we check if it can connect to a neighboring cell.
 // If it can, then we add that cell to the list of locations to check.
 bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
-    XY currentLocation = locationsToCheck.front();
+    XY origin = locationsToCheck.front();
     locationsToCheck.pop_front();
-    g_locationsInOrderVisited.push_back(currentLocation);
+    g_locationsInOrderVisited.push_back(origin);
     g_taskCount.push_back(locationsToCheck.size() + 1);
-    g_indicesChecked.insert((currentLocation.y * grid.size()) + currentLocation.x);
+    g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
 
-    assert(inBounds(grid, currentLocation));
+    assert(inBounds(grid, origin));
 
-    if (currentLocation == target) {
-        std::cout << "FOUND target at " << currentLocation.x << ',' << currentLocation.y << '\n';
+    if (origin == target) {
+        std::cout << "FOUND target at " << origin.x << ',' << origin.y << '\n';
         g_taskCount.back() = 0;
         return true;
     }
@@ -56,14 +56,20 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     std::shuffle(directions.begin(), directions.end(), g);
 
     for (const auto& direction : directions) {
-        XY neighbor = {currentLocation.x + DX[direction], currentLocation.y + DY[direction]};
-        bool targetInBounds = inBounds(grid, neighbor);
-        // Either our cell points to that cell or that cell points to our cell, or both
-        bool noWallBetween = targetInBounds && (((grid[currentLocation.y][currentLocation.x] & direction) != 0) ||
-                                                ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0));
+        XY neighbor = {origin.x + DX[direction], origin.y + DY[direction]};
+        if (!inBounds(grid, neighbor)) {
+            continue;
+        };
         bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
+        if (indexChecked) {
+            continue;
+        }
 
-        if (!indexChecked && noWallBetween) {
+        // Either our cell points to that cell or that cell points to our cell, or both
+        bool noWallBetween = ((grid[origin.y][origin.x] & direction) != 0) ||
+                             ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0);
+
+        if (noWallBetween) {
             locationsToCheck.push_back(neighbor);
         }
     }
