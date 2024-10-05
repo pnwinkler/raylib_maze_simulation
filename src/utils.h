@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <unordered_set>
 #include <vector>
 #include "../lib/raylib.h"
 
@@ -28,11 +29,15 @@ struct canvasDims {
 
 // Function declarations
 Color gradateColor(Color start, Color target, int idx, int maxIdx);
-bool inBounds(gridType& grid, const XY& location);
-bool inBounds(gridType& grid, const int x, const int y);
+bool inBounds(const gridType& grid, const XY& location);
+bool inBounds(const gridType& grid, const int x, const int y);
 canvasDims calculateCanvasDimensions();
 gridType createEmptyGrid(const int rows, const int cols);
 void displayMazeInConsole(gridType& grid);
+std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
+                                          const XY& origin,
+                                          const XY& target,
+                                          std::unordered_set<int> g_indicesChecked);
 
 }  // namespace utils
 

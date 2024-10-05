@@ -38,11 +38,15 @@ static std::vector<int> g_taskCount = {};
 bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
     XY origin = locationsToCheck.front();
     locationsToCheck.pop_front();
-    g_locationsInOrderVisited.push_back(origin);
     g_taskCount.push_back(locationsToCheck.size() + 1);
-    g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
+
+    if (g_indicesChecked.contains((origin.y * grid.size()) + origin.x)) {
+        return false;
+    }
 
     assert(inBounds(grid, origin));
+    g_locationsInOrderVisited.push_back(origin);
+    g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
 
     if (origin == target) {
         std::cout << "FOUND target at " << origin.x << ',' << origin.y << '\n';
@@ -50,28 +54,9 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         return true;
     }
 
-    std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(directions.begin(), directions.end(), g);
-
-    for (const auto& direction : directions) {
-        XY neighbor = {origin.x + DX[direction], origin.y + DY[direction]};
-        if (!inBounds(grid, neighbor)) {
-            continue;
-        };
-        bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
-        if (indexChecked) {
-            continue;
-        }
-
-        // Either our cell points to that cell or that cell points to our cell, or both
-        bool noWallBetween = ((grid[origin.y][origin.x] & direction) != 0) ||
-                             ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0);
-
-        if (noWallBetween) {
+    auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    for (auto& neighbor : neighbors) {
             locationsToCheck.push_back(neighbor);
-        }
     }
 
     return false;
@@ -164,5 +149,5 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
             }
         }
     }
-    DrawText(("Tasks " + std::to_string(g_taskCount.at(locationIdx))).c_str(), 10, 10, 10, MAROON);
+    DrawText(TextFormat("Tasks: %01i", g_taskCount.at(locationIdx)), 10, 10, 10, MAROON);
 }

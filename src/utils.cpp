@@ -1,7 +1,11 @@
 #include "utils.h"
+#include <algorithm>
 #include <iostream>
+#include <random>
 #include <vector>
 #include "constants.cpp"
+#include "unordered_set"
+#include "vector"
 
 using namespace constants;
 
@@ -51,14 +55,13 @@ void displayMazeInConsole(gridType& grid) {
     std::cout << '\n';
 }
 
-bool inBounds(gridType& grid, const int x, const int y) {
+bool inBounds(const gridType& grid, const int x, const int y) {
     return y < grid.size() && x < grid[0].size();
 }
 
-bool inBounds(gridType& grid, const XY& location) {
+bool inBounds(const gridType& grid, const XY& location) {
     return location.y < grid.size() && location.x < grid[0].size();
 }
-
 
 Color gradateColor(Color start, Color target, int idx, int maxIdx) {
     // Apply a function to return a color between the start and target colors
@@ -87,5 +90,36 @@ Color gradateColor(Color start, Color target, int idx, int maxIdx) {
     return clr;
 }
 
+std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
+                                          const XY& origin,
+                                          const XY& target,
+                                          std::unordered_set<int> g_indicesChecked) {
+    std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(directions.begin(), directions.end(), g);
+
+    std::vector<XY> accessibleNeighbors = {};
+
+    for (const auto& direction : directions) {
+        XY neighbor = {origin.x + DX[direction], origin.y + DY[direction]};
+        if (!inBounds(grid, neighbor)) {
+            continue;
+        };
+        bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
+        if (indexChecked) {
+            continue;
+        }
+
+        // Either our cell points to that cell or that cell points to our cell, or both
+        bool noWallBetween = (((grid[origin.y][origin.x] & direction) != 0) ||
+                              ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0));
+
+        if (noWallBetween) {
+            accessibleNeighbors.push_back(neighbor);
+        }
+    }
+    return accessibleNeighbors;
+}
 
 };  // namespace utils

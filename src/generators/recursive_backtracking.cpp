@@ -100,7 +100,7 @@ void rb::generateMazeInstantlyNoDisplay(utils::gridType* grid) {
 // Helps draw grid state in GUI. Expects an existing window.
 void rb::_simulationDraw(utils::gridType* grid) {
     ClearBackground(RAYWHITE);
-    DrawText(("Tasks " + std::to_string(taskDeque.size())).c_str(), 10, 10, 10, MAROON);
+    DrawText(TextFormat("Tasks: %01i", taskDeque.size()), 10, 10, 10, MAROON);
     for (int y = 0; y < grid->size(); y++) {
         for (int x = 0; x < grid->at(0).size(); x++) {
             int val = grid->at(y).at(x);

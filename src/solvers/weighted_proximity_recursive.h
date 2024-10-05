@@ -14,12 +14,12 @@ namespace ws {
 // Scores (as keys) for cells (as values) for all cells that have not yet been visited.
 typedef std::map<int, std::unordered_set<XY>> tScores;
 
-bool nextStep(gridType& grid, const XY& target, tScores& remainingScores);
+bool nextStep(const gridType& grid, const XY& target, tScores& remainingScores);
 int calculateScore(const XY& cell, const XY& mazeFinish);
 XY popBestScorer(tScores& remainingScores);
-void animateSolution(gridType& grid);
+void animateSolution(const gridType& grid);
 void insertIntoScores(const XY& cell, const int score, tScores& remainingScores);
-void solve(gridType& grid, const XY& startLoc, const XY& endLoc);
+void solve(const gridType& grid, const XY& startLoc, const XY& endLoc);
 
 void _solverDraw(const gridType& grid, const int locationIdx);
 }  // namespace ws

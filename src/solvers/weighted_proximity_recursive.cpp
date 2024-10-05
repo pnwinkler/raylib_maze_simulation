@@ -6,10 +6,8 @@
 // or all cells have been visited.
 
 #include "weighted_proximity_recursive.h"
-#include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <random>
 #include <stdexcept>
 #include "../../lib/raylib.h"
 #include "../constants.cpp"
@@ -17,7 +15,6 @@
 #include "deque"
 #include "map"
 #include "unordered_set"
-#include "vector"
 
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
@@ -60,8 +57,7 @@ XY ws::popBestScorer(ws::tScores& remainingScores) {
 void ws::insertIntoScores(const XY& cell, const int score, ws::tScores& remainingScores) {
     if (remainingScores.find(score) != remainingScores.end()) {
         // append the cell into the remaining scores data
-        std::cout << "DEBUG: score group for cell (" << cell.x << ',' << cell.y << ") already exists\n";
-        // std::cout << "Adding (" << cell.x << ',' << cell.y << ") to remainingScores[" << x << "]\n";
+        std::cout << "DEBUG: adding cell (" << cell.x << ',' << cell.y << ") to existing score group\n";
         remainingScores[score].insert(cell);
     } else {
         // add a new group
@@ -81,7 +77,7 @@ void printRemainingScores(const ws::tScores& remainingScores) {
 }
 
 // Perform the next step of the algorithm. Return True if the maze is solved, else False.
-bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
+bool ws::nextStep(const gridType& grid, const XY& target, tScores& remainingScores) {
     // TODO: make this function idempotent (atm, we return True only once)
     // Basically, we pop any cell with the best score, and check if its location equals that
     // of our target cell. If it does, then return True (we've solved the maze).
@@ -94,8 +90,10 @@ bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
     // Select our origin cell, based on score
     XY origin = popBestScorer(remainingScores);
     printRemainingScores(remainingScores);
-    std::cout << "DEBUG: origin=(" << origin.x << ',' << origin.y << ")\n";
+    // TODO: fix problem with the way remainingScores is populated
+    std::cout << "DEBUG: origin=(" << origin.x << ',' << origin.y << ")\n" << std::endl;
 
+    // TODO: make the indexChecked logic identical between this and the naive recursive solver!
     if (g_indicesChecked.contains((origin.y * grid.size()) + origin.x)) {
         return false;
     }
@@ -104,35 +102,15 @@ bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
     g_locationsInOrderVisited.push_back(origin);
     g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
 
-    if (origin.y == target.y && origin.x == target.x) {
-        std::cout << "FOUND at " << origin.x << ',' << origin.y << '\n';
+    if (origin == target) {
+        std::cout << "FOUND target at " << origin.x << ',' << origin.y << '\n';
         return true;
     }
 
-    std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(directions.begin(), directions.end(), g);
-
-    for (const auto& direction : directions) {
-        XY neighbor = {origin.x + DX[direction], origin.y + DY[direction]};
-        if (!inBounds(grid, neighbor)) {
-            continue;
-        };
-        bool indexChecked = g_indicesChecked.contains((neighbor.y * grid.size()) + neighbor.x);
-        if (indexChecked) {
-            continue;
-        }
-
-        // Either our cell points to that cell or that cell points to our cell, or both
-        bool noWallBetween = (((grid[origin.y][origin.x] & direction) != 0) ||
-                              ((grid[neighbor.y][neighbor.x] & OPPOSITE[direction]) != 0));
-
-        if (noWallBetween) {
-            // Neighbor is a potentially valid match
-            int score = calculateScore(neighbor, target);
-            insertIntoScores(neighbor, score, remainingScores);
-        }
+    auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    for (auto& neighbor : neighbors) {
+        int score = calculateScore(neighbor, target);
+        insertIntoScores(neighbor, score, remainingScores);
     }
 
     return false;
@@ -140,7 +118,7 @@ bool ws::nextStep(gridType& grid, const XY& target, tScores& remainingScores) {
 
 // Given a valid maze, find a path within that maze, connecting the start and end locations,
 // while respecting maze walls.
-void ws::solve(gridType& grid, const XY& startLoc, const XY& endLoc) {
+void ws::solve(const gridType& grid, const XY& startLoc, const XY& endLoc) {
     if (!inBounds(grid, startLoc))
         throw std::invalid_argument("Start location out of grid bounds");
     if (!inBounds(grid, endLoc))
@@ -158,7 +136,7 @@ void ws::solve(gridType& grid, const XY& startLoc, const XY& endLoc) {
     }
 }
 
-void ws::animateSolution(gridType& grid) {
+void ws::animateSolution(const gridType& grid) {
     if (g_locationsInOrderVisited.size() == 0) {
         // No attempt has yet been made to solve the maze
         ws::solve(grid, solverStart, solverEnd);
@@ -209,7 +187,7 @@ void ws::_solverDraw(const gridType& grid, const int locationIdx) {
             if (constants::displayScores) {
                 // Add the score to the cell
                 int score = calculateScore({x, y}, solverEnd);
-                DrawText(std::to_string(score).c_str(), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, SCORE_COLOR);
+                DrawText(TextFormat("%01i", score), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, SCORE_COLOR);
             }
 
             // Put this last, so it gets drawn over other objects
