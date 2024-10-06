@@ -25,6 +25,7 @@ using namespace constants;
 static std::unordered_set<int> g_indicesChecked = {};
 static std::deque<XY> g_locationsInOrderVisited = {};
 static const Color SCORE_COLOR = {170, 61, 155, 155};
+static std::vector<int> g_taskCount = {};
 
 // Calculate the score for a given cell
 int ws::calculateScore(const XY& cell, const XY& mazeFinish) {
@@ -41,10 +42,10 @@ int ws::calculateScore(const XY& cell, const XY& mazeFinish) {
 
 // From the remaining scores, pop any one of the best scoring elements
 XY ws::popBestScorer(ws::tScores& remainingScores) {
-    auto lowest = remainingScores.begin();
-    auto key = lowest->first;
+    const auto lowest = remainingScores.begin();
+    const auto key = lowest->first;
     auto& vals = lowest->second;
-    XY origin = *vals.begin();
+    const XY origin = *vals.begin();
     vals.erase(vals.begin());
     if (vals.empty()) {
         remainingScores.erase(key);
@@ -67,9 +68,9 @@ void ws::insertIntoScores(const XY& cell, const int score, ws::tScores& remainin
 }
 
 void printRemainingScores(const ws::tScores& remainingScores) {
-    for (const auto& pair : remainingScores) {
-        std::cout << "Score=" << pair.first << " for cells: ";
-        for (const auto& cell : pair.second) {
+    for (const auto& [score, cells] : remainingScores) {
+        std::cout << "Score=" << score << " for cells: ";
+        for (const auto& cell : cells) {
             std::cout << "(x=" << cell.x << ",y=" << cell.y << ')' << ' ';
         }
         std::cout << '\n';
@@ -78,7 +79,6 @@ void printRemainingScores(const ws::tScores& remainingScores) {
 
 // Perform the next step of the algorithm. Return True if the maze is solved, else False.
 bool ws::nextStep(const gridType& grid, const XY& target, tScores& remainingScores) {
-    // TODO: make this function idempotent (atm, we return True only once)
     // Basically, we pop any cell with the best score, and check if its location equals that
     // of our target cell. If it does, then return True (we've solved the maze).
     // Else false. Then add all unchecked neighbors to the list of cells to check.
@@ -87,13 +87,17 @@ bool ws::nextStep(const gridType& grid, const XY& target, tScores& remainingScor
         throw std::runtime_error("Error: remainingScores expected to have at least one element");
     }
 
+    int countLocationsToCheck = 0;
+    for (auto const& [key, val] : remainingScores) {
+        countLocationsToCheck += val.size();
+    }
+    g_taskCount.push_back(countLocationsToCheck);
+
     // Select our origin cell, based on score
-    XY origin = popBestScorer(remainingScores);
+    const XY origin = popBestScorer(remainingScores);
     printRemainingScores(remainingScores);
-    // TODO: fix problem with the way remainingScores is populated
     std::cout << "DEBUG: origin=(" << origin.x << ',' << origin.y << ")\n" << std::endl;
 
-    // TODO: make the indexChecked logic identical between this and the naive recursive solver!
     if (g_indicesChecked.contains((origin.y * grid.size()) + origin.x)) {
         return false;
     }
@@ -104,12 +108,13 @@ bool ws::nextStep(const gridType& grid, const XY& target, tScores& remainingScor
 
     if (origin == target) {
         std::cout << "FOUND target at " << origin.x << ',' << origin.y << '\n';
+        g_taskCount.back() = 0;
         return true;
     }
 
-    auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
-    for (auto& neighbor : neighbors) {
-        int score = calculateScore(neighbor, target);
+    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    for (const auto neighbor : neighbors) {
+        const int score = calculateScore(neighbor, target);
         insertIntoScores(neighbor, score, remainingScores);
     }
 
@@ -127,7 +132,7 @@ void ws::solve(const gridType& grid, const XY& startLoc, const XY& endLoc) {
     tScores remainingScores = {};
 
     g_indicesChecked.reserve(ROWS * COLS);
-    int score = calculateScore(startLoc, endLoc);
+    const int score = calculateScore(startLoc, endLoc);
     insertIntoScores(startLoc, score, remainingScores);
 
     bool found = false;
@@ -158,12 +163,12 @@ void ws::animateSolution(const gridType& grid) {
 // Helper function, to draw grid state in GUI. Expects an existing window.
 void ws::_solverDraw(const gridType& grid, const int locationIdx) {
     ClearBackground(RAYWHITE);
-    auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
+    const auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
 
     for (int y = 0; y < grid.size(); y++) {
         for (int x = 0; x < grid.at(0).size(); x++) {
             // The offsets are intended to stop this shape from being drawn over the walls of the maze
-            auto mazeEndpoint = g_locationsInOrderVisited.back();
+            const auto mazeEndpoint = g_locationsInOrderVisited.back();
             DrawRectangle(mazeEndpoint.x * CELLWIDTH, mazeEndpoint.y * CELLHEIGHT + 1, CELLWIDTH - 1, CELLHEIGHT - 1,
                           LIGHTGRAY);
             DrawRectangle(checkedLocation.x * CELLWIDTH, checkedLocation.y * CELLHEIGHT + 1, CELLWIDTH - 1,
@@ -178,7 +183,7 @@ void ws::_solverDraw(const gridType& grid, const int locationIdx) {
             }
 
             // Draw the walls
-            int val = grid.at(y).at(x);
+            const int val = grid.at(y).at(x);
             if (val != SOUTH && !(y < grid.size() - 1 && grid.at(y + DY[SOUTH])[x] == NORTH))
                 DrawLine(x * CELLWIDTH, (y + 1) * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, BLACK);
             if (val != EAST && !(x < grid.at(0).size() - 1 && grid.at(y)[x + DX[EAST]] == WEST))
@@ -186,12 +191,10 @@ void ws::_solverDraw(const gridType& grid, const int locationIdx) {
 
             if (constants::displayScores) {
                 // Add the score to the cell
-                int score = calculateScore({x, y}, solverEnd);
+                const int score = calculateScore({x, y}, solverEnd);
                 DrawText(TextFormat("%01i", score), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, SCORE_COLOR);
             }
-
-            // Put this last, so it gets drawn over other objects
-            DrawText("Solver", 5, 5, 6, RED);
         }
     }
+    DrawText(TextFormat("Queue len: %01i", g_taskCount.at(locationIdx)), 5, 5, 0, MAROON);
 }

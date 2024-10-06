@@ -13,7 +13,7 @@ bool nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck);
 void animateSolution(gridType& grid);
 void solve(gridType& grid, XY startLoc, XY endLoc);
 
-void _solverDraw(gridType& grid, int locationIdx);
+void _solverDraw(gridType& grid, const int locationIdx);
 
 }  // namespace ns
 

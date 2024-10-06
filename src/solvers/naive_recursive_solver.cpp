@@ -36,7 +36,7 @@ static std::vector<int> g_taskCount = {};
 // Effectively, for every location to check, we check if it can connect to a neighboring cell.
 // If it can, then we add that cell to the list of locations to check.
 bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
-    XY origin = locationsToCheck.front();
+    const XY origin = locationsToCheck.front();
     locationsToCheck.pop_front();
     g_taskCount.push_back(locationsToCheck.size() + 1);
 
@@ -46,7 +46,7 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
 
     assert(inBounds(grid, origin));
     g_locationsInOrderVisited.push_back(origin);
-    g_indicesChecked.insert((origin.y * grid.size()) + origin.x);
+    g_indicesChecked.emplace((origin.y * grid.size()) + origin.x);
 
     if (origin == target) {
         std::cout << "FOUND target at " << origin.x << ',' << origin.y << '\n';
@@ -54,9 +54,9 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         return true;
     }
 
-    auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
     for (auto& neighbor : neighbors) {
-            locationsToCheck.push_back(neighbor);
+        locationsToCheck.push_back(neighbor);
     }
 
     return false;
@@ -107,14 +107,14 @@ void ns::animateSolution(gridType& grid) {
 }
 
 // This helper function draws the grid's state in GUI. It expects an existing window.
-void ns::_solverDraw(gridType& grid, int locationIdx) {
+void ns::_solverDraw(gridType& grid, const int locationIdx) {
     ClearBackground(RAYWHITE);
 
     // This is the location being evaluated by the algorithm at this particular stage.
-    auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
+    const auto checkedLocation = g_locationsInOrderVisited.at(locationIdx);
 
     // This is the maze exit.
-    auto mazeEndpoint = g_locationsInOrderVisited.back();
+    const auto mazeEndpoint = g_locationsInOrderVisited.back();
 
     for (int y = 0; y < grid.size(); y++) {
         for (int x = 0; x < grid.at(0).size(); x++) {
@@ -136,11 +136,12 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
             }
 
             // Draw the walls between cells
-            int cell_val = grid.at(y).at(x);
-            bool origin_points_east = (cell_val & EAST) != 0;
-            bool origin_points_south = (cell_val & SOUTH) != 0;
-            bool neighbor_points_west = x + DX[EAST] < grid.at(0).size() && (grid.at(y)[x + DX[EAST]] & WEST) != 0;
-            bool neighbor_points_north = y + DY[SOUTH] < grid.size() && (grid.at(y + DY[SOUTH])[x] & NORTH) != 0;
+            const int cell_val = grid.at(y).at(x);
+            const bool origin_points_east = (cell_val & EAST) != 0;
+            const bool origin_points_south = (cell_val & SOUTH) != 0;
+            const bool neighbor_points_west =
+                x + DX[EAST] < grid.at(0).size() && (grid.at(y)[x + DX[EAST]] & WEST) != 0;
+            const bool neighbor_points_north = y + DY[SOUTH] < grid.size() && (grid.at(y + DY[SOUTH])[x] & NORTH) != 0;
             if (!origin_points_east && !neighbor_points_west) {
                 DrawLine((x + 1) * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, (y + 1) * CELLHEIGHT, wallColor);
             }
@@ -149,5 +150,5 @@ void ns::_solverDraw(gridType& grid, int locationIdx) {
             }
         }
     }
-    DrawText(TextFormat("Tasks: %01i", g_taskCount.at(locationIdx)), 10, 10, 10, MAROON);
+    DrawText(TextFormat("Queue len: %01i", g_taskCount.at(locationIdx)), 5, 5, 0, MAROON);
 }
