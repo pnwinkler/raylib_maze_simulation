@@ -20,17 +20,17 @@
 // an absolute index of 0*1+1=1, and [5][3] maps to 5*3+3=18
 
 // Map an absolute index (i.e. cell position on a grid) to a group.
-static int vecIdxToGroup[constants::ROWS * constants::COLS] = {-1};
+static int g_mapIdxToGroup[constants::ROWS * constants::COLS] = {-1};
 
 // Map absolute indices to the direction(s) that each cell tries to connect
-static int vecIdxToDirection[constants::ROWS * constants::COLS] = {-1};
+static int g_idxToDirection[constants::ROWS * constants::COLS] = {-1};
 
 // Map group numbers (as keys) to a vector of absolute indices
-static std::unordered_map<int, std::unordered_set<int>> mapGroupToIdx;
+static std::unordered_map<int, std::unordered_set<int>> g_mapGroupToIdx;
 
 // 0 indexed. This is the row we're currently updating
-static int currentRow = 0;
-static int maxGroupNrSeen = 0;
+static int g_currentRow = 0;
+static int g_maxGroupNrSeen = 0;
 
 // Holds tasks required for simulation, in a queue, to be called later
 // std::deque<std::packaged_task<bool()>> el::taskDeque;
@@ -40,15 +40,15 @@ using namespace constants;
 void el::simulationTick() {
     // todo: update this to actually do ticks, not entire row updates
 
-    if (vecIdxToGroup[0] == -1) {
+    if (g_mapIdxToGroup[0] == -1) {
         // perform first-time setup
-        std::fill_n(vecIdxToGroup, constants::ROWS * constants::COLS, -1);
-        std::fill_n(vecIdxToDirection, constants::ROWS * constants::COLS, -1);
+        std::fill_n(g_mapIdxToGroup, constants::ROWS * constants::COLS, -1);
+        std::fill_n(g_idxToDirection, constants::ROWS * constants::COLS, -1);
 
         srand(time(NULL));
         for (int i = 0; i < constants::ROWS; i++) {
             el::insertGroupMapping(i, i);
-            maxGroupNrSeen = i;
+            g_maxGroupNrSeen = i;
         }
     }
 
@@ -58,14 +58,14 @@ void el::simulationTick() {
     */
 
     // Absolute index of the item in column 0 of the current and next row respectively
-    const int rowBaseIdx = currentRow * constants::COLS;
-    const int nextRowBaseIdx = (currentRow + 1) * constants::COLS;
-    if (currentRow == constants::ROWS - 1) {
+    const int rowBaseIdx = g_currentRow * constants::COLS;
+    const int nextRowBaseIdx = (g_currentRow + 1) * constants::COLS;
+    if (g_currentRow == constants::ROWS - 1) {
         // last row. Connect all cells in row
         for (int c = 0; c < constants::COLS; c++) {
             conditionallyMergeGroups(rowBaseIdx, rowBaseIdx + c);
         }
-        currentRow += 1;
+        g_currentRow += 1;
         // DEBUG code: print the contents of vecIdxToGroup
         // for (int i = 0; i < constants::ROWS; i++) {
         //     for (int j = 0; j < constants::COLS; j++) {
@@ -97,15 +97,15 @@ void el::simulationTick() {
         to connect downwards to the next row
     */
 
-    // Setup 1: pair groups in active row with their indices.
-    std::unordered_map<int, std::vector<int>> activeRowGroups;
+    // Setup 1: pair groups in active row with their indices
+    std::unordered_map<int, std::vector<int>> activeRowGroups = {};
     for (int c = 0; c < constants::COLS; c++) {
-        int groupNr = vecIdxToGroup[rowBaseIdx + c];
+        int groupNr = g_mapIdxToGroup[rowBaseIdx + c];
         activeRowGroups[groupNr].push_back(rowBaseIdx + c);
     }
 
     // Setup 2: select a random index from each group to connect downwards
-    std::unordered_set<int> connectingDownwards;
+    std::unordered_set<int> connectingDownwards = {};
     for (const auto& [_groupNr, cellIndices] : activeRowGroups) {
         int sourceIdx = cellIndices.at(rand() % cellIndices.size());
         connectingDownwards.insert(sourceIdx);
@@ -127,14 +127,14 @@ void el::simulationTick() {
         int targetIdx = nextRowBaseIdx + i;
 
         if (connectingDownwards.contains(sourceIdx)) {
-            int groupNr = vecIdxToGroup[sourceIdx];
+            const int groupNr = g_mapIdxToGroup[sourceIdx];
             el::insertGroupMapping(groupNr, targetIdx);
-            vecIdxToDirection[sourceIdx] += SOUTH;
-            vecIdxToDirection[targetIdx] += NORTH;
+            g_idxToDirection[sourceIdx] += SOUTH;
+            g_idxToDirection[targetIdx] += NORTH;
         } else {
             // set to new groupNr
-            maxGroupNrSeen += 1;
-            el::insertGroupMapping(maxGroupNrSeen, targetIdx);
+            g_maxGroupNrSeen += 1;
+            el::insertGroupMapping(g_maxGroupNrSeen, targetIdx);
         }
     }
 
@@ -143,130 +143,107 @@ void el::simulationTick() {
     // InitWindow(constants::COLS * constants::CELLWIDTH, constants::ROWS * constants::CELLHEIGHT, "Eller's Algorithm");
     // el::_nonWasmFuncToDisplayMazeBuildSteps(&grid);
 
-    currentRow += 1;
+    g_currentRow += 1;
 }
 
-void el::_nonWasmFuncToDisplayMazeBuildSteps(void* arg) {
-    gridType* grid_ptr = static_cast<gridType*>(arg);
+void el::_nonWasmFuncToDisplayMazeBuildSteps(const gridType& grid) {
     SetTargetFPS(constants::FPS_GENERATING);
     while (!WindowShouldClose())  // Detect window close button or ESC key
     {
         BeginDrawing();
         // el::simulationTick();
-        el::_simulationDraw(grid_ptr);
+        el::_simulationDraw(grid);
         EndDrawing();
     }
     CloseWindow();
 }
 
-void el::insertGroupMapping(int groupNr, int idx) {
+void el::insertGroupMapping(const int groupNr, const int idx) {
     // Update our structures that track group membership, using the passed-in values
 
     // Insert a new group mapping, or update the existing mappings
-    if (!mapGroupToIdx.contains(groupNr)) {
-        mapGroupToIdx.insert({groupNr, {idx}});
+    if (!g_mapGroupToIdx.contains(groupNr)) {
+        g_mapGroupToIdx.insert({groupNr, {idx}});
     } else {
-        mapGroupToIdx.at(groupNr).insert(idx);
+        g_mapGroupToIdx.at(groupNr).insert(idx);
     }
 
     // assert(vecIdxToGroup[idx] != -1);
-    vecIdxToGroup[idx] = groupNr;
+    g_mapIdxToGroup[idx] = groupNr;
 
-    // By default, don't connect in any direction
+    // 0 indicates that we don't connect in any direction. That's our default behavior.
     // assert(vecIdxToDirection.size() <= idx);
-    vecIdxToDirection[idx] = 0;
+    g_idxToDirection[idx] = 0;
 }
 
-void el::conditionallyMergeGroups(int idxLeft, int idxRight) {
+void el::conditionallyMergeGroups(const int idxLeft, const int idxRight) {
     // Merge the group at idxRight's location into the group at idxLeft's location, if they're of different groups, then
     // update mappings. The two indices must be direct left and right neighbors.
     assert(idxLeft + 1 == idxRight);
 
-    auto leftGroupNr = vecIdxToGroup[idxLeft];
-    auto rightGroupNr = vecIdxToGroup[idxRight];
+    const auto leftGroupNr = g_mapIdxToGroup[idxLeft];
+    const auto rightGroupNr = g_mapIdxToGroup[idxRight];
     if (leftGroupNr == rightGroupNr) {
         return;
     }
 
-    auto& indicesGroup1 = mapGroupToIdx.at(leftGroupNr);
-    const auto& indicesGroup2 = mapGroupToIdx.at(rightGroupNr);
-    for (int idx : indicesGroup2) {
-        indicesGroup1.insert(idx);
-        vecIdxToGroup[idx] = leftGroupNr;
+    auto& indicesGroupLeft = g_mapGroupToIdx.at(leftGroupNr);
+    const auto& indicesGroupRight = g_mapGroupToIdx.at(rightGroupNr);
+    for (const int idx : indicesGroupRight) {
+        indicesGroupLeft.insert(idx);
+        g_mapIdxToGroup[idx] = leftGroupNr;
     }
-    mapGroupToIdx.erase(rightGroupNr);
+    g_mapGroupToIdx.erase(rightGroupNr);
 
     // Update the direction of the cells
     // assert(vecIdxToDirection.size() > idxLeft);
-    if ((vecIdxToDirection[idxLeft] & EAST) == 0) {
-        vecIdxToDirection[idxLeft] += EAST;
+    if ((g_idxToDirection[idxLeft] & EAST) == 0) {
+        g_idxToDirection[idxLeft] += EAST;
     }
-    if ((vecIdxToDirection[idxRight] & WEST) == 0) {
-        vecIdxToDirection[idxRight] += WEST;
+    if ((g_idxToDirection[idxRight] & WEST) == 0) {
+        g_idxToDirection[idxRight] += WEST;
     }
 }
 
 void el::generateMazeInstantlyNoDisplay() {
-    while (currentRow < constants::ROWS) {
+    while (g_currentRow < constants::ROWS) {
         el::simulationTick();
     }
 }
 
-gridType el::exportCardinalMaze() {
-    // Create and return a maze that has connections between cells saved in terms of cardinal directions (e.g. North,
-    // East). Such a format is expected by some of our solvers.
-    gridType grid = utils::createEmptyGrid(constants::ROWS, constants::COLS);
-
-    // DEBUG code
-    // std::cout << "\n\n";
-    // for (int i = 0; i < constants::ROWS; i++) {
-    //     for (int j = 0; j < constants::COLS; j++) {
-    //         std::cout << vecIdxToGroup.at(i * constants::COLS + j) << ' ';
-    //     }
-    //     std::cout << '\n';
-    // }
-
-    int idx = 0;
-    for (int idx = 0; idx < std::size(vecIdxToDirection); idx++) {
-        int r = idx / constants::COLS;
-        int c = idx % constants::COLS;
-        grid.at(r).at(c) = vecIdxToDirection[idx];
-    }
-    return grid;
-}
-
-void el::_simulationDraw(gridType* grid) {
+void el::_simulationDraw(const gridType& grid) { 
     // Helps draw grid state in GUI. Expects an existing window.
     ClearBackground(RAYWHITE);
-    for (int y = 0; y < grid->size(); y++) {
-        for (int x = 0; x < grid->at(0).size(); x++) {
-            int val = grid->at(y).at(x);
+    for (int y = 0; y < grid.size(); y++) {
+        for (int x = 0; x < grid.at(0).size(); x++) {
+            int val = grid.at(y).at(x);
 
             // DEBUG code
-            if ((y * constants::COLS + x) > std::size(vecIdxToGroup) - 1)
+            if ((y * constants::COLS + x) > std::size(g_mapIdxToGroup) - 1) {
                 continue;
+            }
 
             std::cout << x << ',' << y << '\n';
             // Draw the group number
             // TODO: stop this from out of range core dumping
             // std::cout<<x<<','<<y<<'\n';
             // TODO: resolve why 0 size
-            std::cout << std::size(vecIdxToGroup) << '\n';
+            std::cout << std::size(g_mapIdxToGroup) << '\n';
             int idx = y * constants::COLS + x;
             // if (vecIdxToGroup.size() < idx + 1) {
             //     continue;
             // }
 
-            DrawText(std::to_string(vecIdxToGroup[idx]).c_str(), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, BLACK);
+            DrawText(std::to_string(g_mapIdxToGroup[idx]).c_str(), x * CELLWIDTH + 5, y * CELLHEIGHT + 5, 6, BLACK);
 
             bool northBlocked =
-                utils::inBounds(*grid, x, y - 1) && (grid->at(y - 1).at(x) & SOUTH) == 0 && (val & NORTH) == 0;
+                utils::inBounds(grid, x, y - 1) && (grid.at(y - 1).at(x) & SOUTH) == 0 && (val & NORTH) == 0;
             bool southBlocked =
-                utils::inBounds(*grid, x, y + 1) && (val & SOUTH) == 0 && (grid->at(y + 1).at(x) & NORTH) == 0;
+                utils::inBounds(grid, x, y + 1) && (val & SOUTH) == 0 && (grid.at(y + 1).at(x) & NORTH) == 0;
             bool eastBlocked =
-                utils::inBounds(*grid, x + 1, y) && (val & EAST) == 0 && (grid->at(y).at(x + 1) & WEST) == 0;
+                utils::inBounds(grid, x + 1, y) && (val & EAST) == 0 && (grid.at(y).at(x + 1) & WEST) == 0;
             bool westBlocked =
-                utils::inBounds(*grid, x - 1, y) && (grid->at(y).at(x - 1) & EAST) == 0 && (val & WEST) == 0;
+                utils::inBounds(grid, x - 1, y) && (grid.at(y).at(x - 1) & EAST) == 0 && (val & WEST) == 0;
 
             if (northBlocked) {
                 DrawLine(x * CELLWIDTH, y * CELLHEIGHT, (x + 1) * CELLWIDTH, y * CELLHEIGHT, BLACK);

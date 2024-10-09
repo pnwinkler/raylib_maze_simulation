@@ -43,10 +43,9 @@ int main() {
         }
         case ELLERS:
             // el::generateMazeInstantlyNoDisplay();
-            grid = el::exportCardinalMaze();
             // TODO: WIP replace these lines. At the moment, we use them to print the final state of the maze
             InitWindow(dims.x, dims.y, "Maze Generator: Eller's algorithm");
-            el::_nonWasmFuncToDisplayMazeBuildSteps(&grid);
+            el::_nonWasmFuncToDisplayMazeBuildSteps(grid);
             std::cout << "Generated maze using Eller's algorithm\n" << std::endl;
             break;
 

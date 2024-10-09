@@ -16,9 +16,9 @@ void generateMazeInstantlyNoDisplay();
 gridType exportCardinalMaze();
 
 // Display functions
-void _nonWasmFuncToDisplayMazeBuildSteps(void* arg);
+void _nonWasmFuncToDisplayMazeBuildSteps(const gridType& grid);
 // void _wasmFuncToDisplayMazeBuildSteps(void* arg);
-void _simulationDraw(gridType* grid);
+void _simulationDraw(const gridType& grid);
 
 }  // namespace el
 
