@@ -7,6 +7,9 @@ PLATFORM             ?= PLATFORM_DESKTOP
 SRC_PATH      ?= ./src
 OBJS = $(SRC_PATH:.cpp=.o)
 
+# Define path for source code tests
+TEST_PATH     ?= ./tests
+
 # Build mode for library: DEBUG or RELEASE
 BUILD_MODE    ?= RELEASE
 
@@ -63,6 +66,9 @@ DEPS_MAIN= $(SRC_PATH)/generators/recursive_backtracking.cpp $(SRC_PATH)/generat
 
 main: $(SRC_PATH)/main.cpp
 	$(CC) -o bin/$@ $(DEPS_MAIN) $^ $(CFLAGS) 
+
+tests: $(TEST_PATH)/test_utils.cpp
+	$(CC) -o bin/$@ $(DEPS_MAIN) $^ $(CFLAGS)
 
 clean:
 	# rm -f $(OBJ)
