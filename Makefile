@@ -21,36 +21,36 @@ CC =/usr/bin/g++
 
 # Define compiler flags: CFLAGS
 #------------------------------------------------------------------------------------------------
-#  -std=c++23               defines C++ language mode (standard C++ from 2023 revision)
+#  -std=c++23            defines C++ language mode (standard C++ from 2023 revision)
 CFLAGS= -std=c++23 
 WASM_OUT= game.html
 SHELL_HTML= shell.html
 
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
-		#  These flags are copy-pasted from the Raylib documentation
-		CFLAGS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+    #  These flags are copy-pasted from the Raylib documentation
+    CFLAGS += -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 endif
 
 ifeq ($(PLATFORM),PLATFORM_WEB)
     # HTML5 emscripten compiler
     CC = emcc
-		#  -Os                       	  optimize for code size
-		#  -Wall                        enable most warnings
-		#  --shell-file 								specify the shell file, that will serve as a launcher to run the code
-		#  -DPLATFORM_WEB 							compile for use in the web browser
-		#  The other flags are required for Raylib or code in $(SRC_PATH)
-		CFLAGS += -o $(WASM_OUT) -Os -Wall ./lib/libraylib.a -I. -I./lib/libraylib.h -L. -L./lib/libraylib.a -s USE_GLFW=3 --shell-file $(SHELL_HTML) -DPLATFORM_WEB
-		ifeq ($(BUILD_MODE),DEBUG)
-				# -sASSERTIONS=1            enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-				# --profiling               include information for code profiling
-				CFLAGS += -sASSERTIONS=1 --profiling
-		endif
+	#  -Os                	optimize for code size
+	#  -Wall               	enable most warnings
+	#  --shell-file 	specify the shell file, that will serve as a launcher to run the code
+	#  -DPLATFORM_WEB 	compile for use in the web browser
+	#  The other flags are required for Raylib or code in $(SRC_PATH)
+	CFLAGS += -o $(WASM_OUT) -Os -Wall ./lib/libraylib.a -I. -I./lib/libraylib.h -L. -L./lib/libraylib.a -s USE_GLFW=3 --shell-file $(SHELL_HTML) -DPLATFORM_WEB
+	ifeq ($(BUILD_MODE),DEBUG)
+		# -sASSERTIONS=1            enable runtime checks for common memory allocation errors (-O1 and above turn it off)
+		# --profiling               include information for code profiling
+		CFLAGS += -sASSERTIONS=1 --profiling
+	endif
 endif
 
 ifeq ($(BUILD_MODE),DEBUG)
-		#  -g                       include debug information on compilation
-		#  -pedantic-errors         force compilation to fail if attempting to compile code not adhering to C/C++ standards
-		CFLAGS += -g -pedantic-errors
+	#  -g                       include debug information on compilation
+	#  -pedantic-errors         force compilation to fail if attempting to compile code not adhering to C/C++ standards
+	CFLAGS += -g -pedantic-errors
 endif
 
 # Define source code object files required
