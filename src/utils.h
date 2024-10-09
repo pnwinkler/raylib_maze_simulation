@@ -6,7 +6,8 @@
 #include "../lib/raylib.h"
 
 namespace utils {
-// Type definitions required by multiple files
+// Type definitions required by multiple files go in this file.
+
 typedef std::vector<std::vector<int>> gridType;
 struct XY {
     bool operator==(const XY& rhs) const { return (x == rhs.x) && (y == rhs.y); }
@@ -18,7 +19,9 @@ struct XY {
     //     return x < other.x;
     // }
 
+    // This is the 0 indexed position on the x axis
     int x;
+    // This is the 0 indexed position on the y axis
     int y;
 };
 

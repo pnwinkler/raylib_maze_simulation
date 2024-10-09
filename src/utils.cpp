@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
+#include "cassert"
 #include "constants.cpp"
 #include "unordered_set"
 #include "vector"
@@ -11,8 +12,10 @@ using namespace constants;
 
 namespace utils {
 
+// todo: consider replacing with fixed size array
 typedef std::vector<std::vector<int>> gridType;
 
+// Create and return a grid-like object, whose every value is set to 0
 gridType createEmptyGrid(const int rows, const int cols) {
     gridType grid;
     for (int y = 0; y < rows; y++) {
@@ -25,18 +28,18 @@ gridType createEmptyGrid(const int rows, const int cols) {
     return grid;
 }
 
+// Return the minimum X and Y pixel dimensions required by the grid
 canvasDims calculateCanvasDimensions() {
     int x = COLS * CELLWIDTH;
     int y = ROWS * CELLHEIGHT;
     return canvasDims{x, y};
 }
 
+// Prints the maze to the console.
 void displayMazeInConsole(gridType& grid) {
-    // Prints the maze to the console.
-
-    // Create top wall
     int height = grid.size();
     int width = grid.at(0).size();
+    // Create the top wall
     for (int i = 0; i < width * 2; i++) {
         std::cout << '_';
     }
@@ -55,20 +58,25 @@ void displayMazeInConsole(gridType& grid) {
     std::cout << '\n';
 }
 
+// Check if an x,y (both 0 indexed) combination fall within the provided grid's bounds
 bool inBounds(const gridType& grid, const int x, const int y) {
     return y < grid.size() && x < grid[0].size();
 }
 
+// Check if an XY struct represents a location falling within the provided grid's bounds
 bool inBounds(const gridType& grid, const XY& location) {
     return location.y < grid.size() && location.x < grid[0].size();
 }
 
+// Apply a function to return a color between the start and target colors
+// TODO: determine how this does / should handle negatives
 Color gradateColor(Color start, Color target, int idx, int maxIdx) {
-    // Apply a function to return a color between the start and target colors
     auto d1 = target.r - start.r;
     auto d2 = target.g - start.g;
     auto d3 = target.b - start.b;
     auto d4 = target.a - start.a;
+
+    assert(maxIdx > 0 && "maxIdx must be greater than 0");
 
     // For i values close to locationIdx, return more similar colors than for i values further from it.
     // Reasoning: I believe it's visually more appealing (and less distracting) to use fairly uniform colors for
