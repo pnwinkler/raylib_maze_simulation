@@ -112,7 +112,7 @@ bool ws::nextStep(const gridType& grid, const XY& target, tScores& remainingScor
         return true;
     }
 
-    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, g_indicesChecked);
     for (const auto neighbor : neighbors) {
         const int score = calculateScore(neighbor, target);
         insertIntoScores(neighbor, score, remainingScores);

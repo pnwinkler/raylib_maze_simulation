@@ -54,7 +54,7 @@ bool ns::nextStep(gridType& grid, XY target, std::deque<XY>& locationsToCheck) {
         return true;
     }
 
-    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, target, g_indicesChecked);
+    const auto neighbors = utils::returnAccessibleNeighbors(grid, origin, g_indicesChecked);
     for (auto& neighbor : neighbors) {
         locationsToCheck.push_back(neighbor);
     }

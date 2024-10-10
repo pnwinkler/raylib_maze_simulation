@@ -39,7 +39,6 @@ gridType createEmptyGrid(const int rows, const int cols);
 void displayMazeInConsole(gridType& grid);
 std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
                                           const XY& origin,
-                                          const XY& target,
                                           std::unordered_set<int> g_indicesChecked);
 
 }  // namespace utils

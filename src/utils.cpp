@@ -70,6 +70,7 @@ bool inBounds(const gridType& grid, const XY& location) {
 
 // Apply a function to return a color between the start and target colors
 // TODO: determine how this does / should handle negatives
+// TODO: rework documentation and signature to make usage/purpose more obvious
 Color gradateColor(Color start, Color target, int idx, int maxIdx) {
     auto d1 = target.r - start.r;
     auto d2 = target.g - start.g;
@@ -100,7 +101,6 @@ Color gradateColor(Color start, Color target, int idx, int maxIdx) {
 
 std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
                                           const XY& origin,
-                                          const XY& target,
                                           std::unordered_set<int> g_indicesChecked) {
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
     std::random_device rd;
