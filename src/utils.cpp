@@ -99,9 +99,10 @@ Color gradateColor(Color start, Color target, int idx, int maxIdx) {
     return clr;
 }
 
-std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
-                                          const XY& origin,
-                                          std::unordered_set<int> g_indicesChecked) {
+// TODO: document, and mention bounds checks
+std::vector<XY> returnConnectedNeighbors(const gridType& grid,
+                                         const XY& origin,
+                                         std::unordered_set<int> g_indicesChecked) {
     std::vector<int> directions = {NORTH, SOUTH, EAST, WEST};
     std::random_device rd;
     std::mt19937 g(rd());

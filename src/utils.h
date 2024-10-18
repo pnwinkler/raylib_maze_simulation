@@ -37,9 +37,9 @@ bool inBounds(const gridType& grid, const int x, const int y);
 canvasDims calculateCanvasDimensions();
 gridType createEmptyGrid(const int rows, const int cols);
 void displayMazeInConsole(gridType& grid);
-std::vector<XY> returnAccessibleNeighbors(const gridType& grid,
-                                          const XY& origin,
-                                          std::unordered_set<int> g_indicesChecked);
+std::vector<XY> returnConnectedNeighbors(const gridType& grid,
+                                         const XY& origin,
+                                         std::unordered_set<int> g_indicesChecked);
 
 }  // namespace utils
 
